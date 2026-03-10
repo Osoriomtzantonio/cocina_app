@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/home_screen.dart'; // Importamos la pantalla de inicio
 
 // Punto de entrada de la aplicación
 void main() {
@@ -23,38 +24,8 @@ class CocinaApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      // Pantalla inicial (temporal mientras construimos la app)
-      home: const Scaffold(
-        backgroundColor: Color(0xFFFF6B35),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Ícono de la app
-              Icon(Icons.restaurant_menu, size: 80, color: Colors.white),
-              SizedBox(height: 16),
-              // Nombre de la app
-              Text(
-                'CocinaApp',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 8),
-              // Subtítulo
-              Text(
-                'Recetario Inteligente',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      // Pantalla inicial: HomeScreen
+      home: const HomeScreen(),
     );
   }
 }
