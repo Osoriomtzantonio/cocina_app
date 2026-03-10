@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/recipe_card.dart'; // Importamos la tarjeta de receta
 
 // Pantalla principal de la aplicación
 class HomeScreen extends StatelessWidget {
@@ -38,6 +39,39 @@ class HomeScreen extends StatelessWidget {
 
             // ── LISTA HORIZONTAL DE CATEGORÍAS ──────────────────
             _buildCategorias(),
+
+            const SizedBox(height: 20),
+
+            // ── TÍTULO SECCIÓN RECETAS POPULARES ────────────────
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recetas populares',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                  Text(
+                    'Ver todas',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFFF6B35),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── GRID DE RECETAS POPULARES ────────────────────────
+            _buildRecetasPopulares(),
 
             const SizedBox(height: 24),
           ],
@@ -249,6 +283,68 @@ class HomeScreen extends StatelessWidget {
           return _buildCategoriaChip(
             nombre: categoria['nombre']!,
             icono: categoria['icono']!,
+          );
+        },
+      ),
+    );
+  }
+
+  // ── WIDGET: GRID DE RECETAS POPULARES ───────────────────────────
+  Widget _buildRecetasPopulares() {
+    // Datos de ejemplo (se reemplazarán con datos reales de la API en Clase 09)
+    final recetas = [
+      {
+        'nombre': 'Teriyaki Chicken Casserole',
+        'categoria': 'Chicken',
+        'area': 'Japanese',
+        'imagen': 'https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg',
+      },
+      {
+        'nombre': 'Beef and Mustard Pie',
+        'categoria': 'Beef',
+        'area': 'British',
+        'imagen': 'https://www.themealdb.com/images/media/meals/sytuqu1511553755.jpg',
+      },
+      {
+        'nombre': 'Pad See Ew',
+        'categoria': 'Pasta',
+        'area': 'Thai',
+        'imagen': 'https://www.themealdb.com/images/media/meals/uuuspp1468263334.jpg',
+      },
+      {
+        'nombre': 'Spaghetti Bolognese',
+        'categoria': 'Pasta',
+        'area': 'Italian',
+        'imagen': 'https://www.themealdb.com/images/media/meals/sutysw1468247559.jpg',
+      },
+    ];
+
+    // GridView para mostrar las tarjetas en cuadrícula de 2 columnas
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        // shrinkWrap y NeverScrollableScrollPhysics permiten que el GridView
+        // viva dentro de un SingleChildScrollView sin conflictos de scroll
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,       // 2 columnas
+          crossAxisSpacing: 12,    // Espacio horizontal entre tarjetas
+          mainAxisSpacing: 12,     // Espacio vertical entre tarjetas
+          childAspectRatio: 0.78,  // Proporción ancho/alto de cada tarjeta
+        ),
+        itemCount: recetas.length,
+        itemBuilder: (context, index) {
+          final receta = recetas[index];
+          // Usamos nuestro widget RecipeCard (Row + Column + Stack)
+          return RecipeCard(
+            nombre: receta['nombre']!,
+            categoria: receta['categoria']!,
+            area: receta['area']!,
+            imagenUrl: receta['imagen']!,
+            onTap: () {
+              // Navegación al detalle (se implementará en Clase 05)
+            },
           );
         },
       ),
