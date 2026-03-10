@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/recipe_card.dart'; // Importamos la tarjeta de receta
+import '../widgets/recipe_card.dart';              // Tarjeta de receta
+import '../screens/recipe_detail_screen.dart';     // Pantalla de detalle
 
 // Pantalla principal de la aplicación
 class HomeScreen extends StatelessWidget {
@@ -343,7 +344,17 @@ class HomeScreen extends StatelessWidget {
             area: receta['area']!,
             imagenUrl: receta['imagen']!,
             onTap: () {
-              // Navegación al detalle (se implementará en Clase 05)
+              // Navega a RecipeDetailScreen pasando los datos de la receta
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecipeDetailScreen(
+                    idMeal: '52772',
+                    nombre: receta['nombre']!,
+                    imagenUrl: receta['imagen']!,
+                  ),
+                ),
+              );
             },
           );
         },

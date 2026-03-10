@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart'; // Importamos la pantalla de inicio
+import 'screens/home_screen.dart';   // Pantalla de inicio
+import 'theme/app_theme.dart';       // Tema centralizado de la app
 
 // Punto de entrada de la aplicación
 void main() {
@@ -13,18 +14,10 @@ class CocinaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Nombre de la app
       title: 'CocinaApp',
-      // Oculta el banner de debug
       debugShowCheckedModeBanner: false,
-      // Tema principal de la aplicación
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF6B35), // Naranja principal
-        ),
-        useMaterial3: true,
-      ),
-      // Pantalla inicial: HomeScreen
+      // Usamos el tema centralizado definido en app_theme.dart
+      theme: AppTheme.theme,
       home: const HomeScreen(),
     );
   }
