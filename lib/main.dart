@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';   // Pantalla de inicio
+import 'screens/main_screen.dart';   // Pantalla contenedora principal
 import 'theme/app_theme.dart';       // Tema centralizado de la app
 
 // Punto de entrada de la aplicación
@@ -18,7 +18,7 @@ class CocinaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       // Usamos el tema centralizado definido en app_theme.dart
       theme: AppTheme.theme,
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }
