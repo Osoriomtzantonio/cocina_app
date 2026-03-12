@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/recipe_card.dart';
-import '../screens/recipe_detail_screen.dart';
+import '../widgets/recipe_grid.dart';
 import '../theme/app_theme.dart';
-import '../models/recipe_model.dart'; // Importamos el modelo de receta
+import '../models/recipe_model.dart';
 
 // ── STATEFULWIDGET ────────────────────────────────────────────────────
 // Usamos StatefulWidget porque HomeScreen tiene estado que cambia:
@@ -359,71 +358,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── WIDGET: GRID DE RECETAS POPULARES ───────────────────────────
+  // ── WIDGET: GRID DE RECETAS POPULARES (ahora RESPONSIVE) ────────
   Widget _buildRecetasPopulares() {
-    // Usamos RecipeModel para estructurar los datos (aunque aún son estáticos)
     final recetas = [
-      RecipeModel(
-        idMeal: '52772', strMeal: 'Teriyaki Chicken Casserole',
-        strCategory: 'Chicken', strArea: 'Japanese',
-        strInstructions: '', ingredientes: [],
-        strMealThumb: 'https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg',
-      ),
-      RecipeModel(
-        idMeal: '52997', strMeal: 'Beef and Mustard Pie',
-        strCategory: 'Beef', strArea: 'British',
-        strInstructions: '', ingredientes: [],
-        strMealThumb: 'https://www.themealdb.com/images/media/meals/sytuqu1511553755.jpg',
-      ),
-      RecipeModel(
-        idMeal: '52944', strMeal: 'Pad See Ew',
-        strCategory: 'Pasta', strArea: 'Thai',
-        strInstructions: '', ingredientes: [],
-        strMealThumb: 'https://www.themealdb.com/images/media/meals/uuuspp1468263334.jpg',
-      ),
-      RecipeModel(
-        idMeal: '52770', strMeal: 'Spaghetti Bolognese',
-        strCategory: 'Pasta', strArea: 'Italian',
-        strInstructions: '', ingredientes: [],
-        strMealThumb: 'https://www.themealdb.com/images/media/meals/sutysw1468247559.jpg',
-      ),
+      RecipeModel(idMeal: '52772', strMeal: 'Teriyaki Chicken Casserole',
+          strCategory: 'Chicken', strArea: 'Japanese', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg'),
+      RecipeModel(idMeal: '52997', strMeal: 'Beef and Mustard Pie',
+          strCategory: 'Beef', strArea: 'British', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/sytuqu1511553755.jpg'),
+      RecipeModel(idMeal: '52944', strMeal: 'Pad See Ew',
+          strCategory: 'Pasta', strArea: 'Thai', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/uuuspp1468263334.jpg'),
+      RecipeModel(idMeal: '52770', strMeal: 'Spaghetti Bolognese',
+          strCategory: 'Pasta', strArea: 'Italian', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/sutysw1468247559.jpg'),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.78,
-        ),
-        itemCount: recetas.length,
-        itemBuilder: (context, index) {
-          final receta = recetas[index];
-          return RecipeCard(
-            nombre: receta.strMeal,
-            categoria: receta.strCategory,
-            area: receta.strArea,
-            imagenUrl: receta.strMealThumb,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RecipeDetailScreen(
-                    idMeal: receta.idMeal,
-                    nombre: receta.strMeal,
-                    imagenUrl: receta.strMealThumb,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
+    // RecipeGrid usa LayoutBuilder internamente para calcular las columnas
+    return RecipeGrid(recetas: recetas, shrinkWrap: true);
   }
 
   // ── WIDGET: CHIP INDIVIDUAL DE CATEGORÍA ────────────────────────

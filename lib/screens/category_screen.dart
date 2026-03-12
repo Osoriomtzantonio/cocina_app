@@ -1,47 +1,52 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/recipe_card.dart';
-import 'recipe_detail_screen.dart';
+import '../models/recipe_model.dart';
+import '../utils/responsive_helper.dart';
+import '../widgets/recipe_grid.dart';
 
-// Pantalla de recetas filtradas por categoría
+// Pantalla de recetas filtradas por categoría — con diseño RESPONSIVE
 // Los datos reales de la API se conectan en Clase 09
 class CategoryScreen extends StatelessWidget {
-  // Nombre de la categoría seleccionada desde el Drawer
   final String categoria;
 
   const CategoryScreen({super.key, required this.categoria});
 
   @override
   Widget build(BuildContext context) {
-    // Datos de ejemplo mientras no hay API real
-    final recetasEjemplo = [
-      {
-        'nombre': 'Teriyaki Chicken Casserole',
-        'area': 'Japanese',
-        'imagen': 'https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg',
-      },
-      {
-        'nombre': 'Chicken Handi',
-        'area': 'Indian',
-        'imagen': 'https://www.themealdb.com/images/media/meals/wyxwsp1486979827.jpg',
-      },
-      {
-        'nombre': 'Chicken Congee',
-        'area': 'Chinese',
-        'imagen': 'https://www.themealdb.com/images/media/meals/1529446352.jpg',
-      },
-      {
-        'nombre': 'Chicken Fajita Mac',
-        'area': 'American',
-        'imagen': 'https://www.themealdb.com/images/media/meals/qrqywr1503066605.jpg',
-      },
+    // ── MEDIAQUERY: obtenemos info de la pantalla ─────────────────
+    // responsive tiene propiedades como esCelular, esTablet, columnasGrid, etc.
+    final responsive = ResponsiveHelper.of(context);
+
+    // Datos de ejemplo (vendrán de la API en Clase 09)
+    final recetas = [
+      RecipeModel(idMeal: '52772', strMeal: 'Teriyaki Chicken Casserole',
+          strCategory: categoria, strArea: 'Japanese', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg'),
+      RecipeModel(idMeal: '52795', strMeal: 'Chicken Handi',
+          strCategory: categoria, strArea: 'Indian', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/wyxwsp1486979827.jpg'),
+      RecipeModel(idMeal: '52956', strMeal: 'Chicken Congee',
+          strCategory: categoria, strArea: 'Chinese', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/1529446352.jpg'),
+      RecipeModel(idMeal: '52993', strMeal: 'Chicken Fajita Mac',
+          strCategory: categoria, strArea: 'American', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/qrqywr1503066605.jpg'),
+      RecipeModel(idMeal: '52821', strMeal: 'Chicken Marengo',
+          strCategory: categoria, strArea: 'French', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/qpxvuq1511798906.jpg'),
+      RecipeModel(idMeal: '52940', strMeal: 'Brown Stew Chicken',
+          strCategory: categoria, strArea: 'Jamaican', strInstructions: '',
+          ingredientes: [], strMealThumb: 'https://www.themealdb.com/images/media/meals/sypxpx1515365095.jpg'),
     ];
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        // El título muestra el nombre de la categoría seleccionada
-        title: Text(categoria),
+        title: Text(
+          categoria,
+          // ── MEDIAQUERY en acción: el título es más grande en tablets
+          style: TextStyle(fontSize: responsive.fontSizeTitulo),
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -49,68 +54,75 @@ class CategoryScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── ENCABEZADO de la sección ──────────────────────────
-          _buildEncabezado(recetasEjemplo.length),
-          // ── GRID de recetas ───────────────────────────────────
+          // ── ENCABEZADO responsive ─────────────────────────────
+          _buildEncabezado(recetas.length, responsive),
+          // ── GRID RESPONSIVE (usa RecipeGrid con LayoutBuilder) ─
           Expanded(
-            child: _buildGrid(context, recetasEjemplo),
+            child: RecipeGrid(recetas: recetas),
           ),
         ],
       ),
     );
   }
 
-  // ── ENCABEZADO: total de recetas encontradas ─────────────────────
-  Widget _buildEncabezado(int total) {
+  // ── ENCABEZADO: muestra el tipo de dispositivo detectado ─────────
+  Widget _buildEncabezado(int total, ResponsiveHelper responsive) {
+    // Texto que muestra el tipo de pantalla detectado (útil para demostración)
+    final tipoDispositivo = responsive.esTabletGrande
+        ? 'Tablet grande (4 cols)'
+        : responsive.esTablet
+            ? 'Tablet (3 cols)'
+            : responsive.esHorizontal
+                ? 'Horizontal (3 cols)'
+                : 'Celular (2 cols)';
+
     return Container(
       color: AppColors.primary,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      // ── MEDIAQUERY: padding horizontal adaptable ──────────────
+      padding: EdgeInsets.fromLTRB(
+          responsive.paddingHorizontal, 0, responsive.paddingHorizontal, 14),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(Icons.restaurant_menu, color: Colors.white70, size: 16),
-          const SizedBox(width: 6),
-          Text(
-            '$total recetas encontradas',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          // Total de recetas
+          Row(
+            children: [
+              const Icon(Icons.restaurant_menu, color: Colors.white70, size: 15),
+              const SizedBox(width: 6),
+              Text(
+                '$total recetas',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+          // Tipo de dispositivo detectado
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  // Ícono diferente según el dispositivo
+                  responsive.esCelular
+                      ? Icons.smartphone
+                      : Icons.tablet_mac,
+                  color: Colors.white, size: 13,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  tipoDispositivo,
+                  style: const TextStyle(
+                    color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  // ── GRID de tarjetas de recetas ──────────────────────────────────
-  Widget _buildGrid(BuildContext context, List<Map<String, String>> recetas) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,      // 2 columnas
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.78,
-      ),
-      itemCount: recetas.length,
-      itemBuilder: (context, index) {
-        final receta = recetas[index];
-        return RecipeCard(
-          nombre: receta['nombre']!,
-          categoria: categoria,
-          area: receta['area']!,
-          imagenUrl: receta['imagen']!,
-          onTap: () {
-            // Navigator.push: navega a una nueva pantalla apilándola
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => RecipeDetailScreen(
-                  idMeal: index.toString(),
-                  nombre: receta['nombre']!,
-                  imagenUrl: receta['imagen']!,
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
