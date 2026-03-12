@@ -38,6 +38,9 @@ dependencies:
   # Librería para hacer peticiones HTTP a la API TheMealDB
   http: ^1.2.2
 
+  # Almacenamiento local clave-valor para guardar favoritos offline
+  shared_preferences: ^2.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

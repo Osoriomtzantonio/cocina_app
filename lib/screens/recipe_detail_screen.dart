@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/recipe_model.dart';
+import '../services/favorites_service.dart';
 
 // Pantalla de detalle de una receta
-// Por ahora usa datos estáticos; en Clase 09 consumirá la API real
+// En Clase 09 consumirá la API real; por ahora usa datos estáticos
 class RecipeDetailScreen extends StatefulWidget {
-  // Datos básicos que recibe de la pantalla anterior
   final String idMeal;
   final String nombre;
   final String imagenUrl;
@@ -21,8 +22,78 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  // Servicio de favoritos
+  final FavoritesService _favoritesService = FavoritesService();
+
   // Estado del botón de favorito
   bool _esFavorita = false;
+
+  // ── initState: se ejecuta UNA VEZ al crear la pantalla ────────────
+  // Verificamos si esta receta ya está guardada en favoritos
+  @override
+  void initState() {
+    super.initState();
+    _verificarSiEsFavorita();
+  }
+
+  // Consulta SharedPreferences para saber el estado real del favorito
+  Future<void> _verificarSiEsFavorita() async {
+    final esFav = await _favoritesService.esFavorita(widget.idMeal);
+    // Solo actualizamos si el widget sigue montado en el árbol
+    if (mounted) {
+      setState(() => _esFavorita = esFav);
+    }
+  }
+
+  // ── TOGGLE FAVORITO: guarda o elimina según el estado actual ──────
+  Future<void> _toggleFavorito() async {
+    if (_esFavorita) {
+      // Ya es favorita → la eliminamos
+      await _favoritesService.eliminarFavorito(widget.idMeal);
+      if (mounted) {
+        setState(() => _esFavorita = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Receta eliminada de favoritos'),
+            backgroundColor: Colors.grey,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      // No es favorita → la guardamos
+      // Construimos el modelo con los datos disponibles
+      final receta = RecipeModel(
+        idMeal:          widget.idMeal,
+        strMeal:         widget.nombre,
+        strCategory:     'Chicken',       // En Clase 09 vendrá de la API
+        strArea:         'Japanese',
+        strInstructions: 'Ver en la app con conexión a internet.',
+        strMealThumb:    widget.imagenUrl,
+        ingredientes:    [],
+      );
+      await _favoritesService.guardarFavorito(receta);
+      if (mounted) {
+        setState(() => _esFavorita = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('¡Receta guardada en favoritos! ✓'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+            // Botón para deshacer la acción
+            action: SnackBarAction(
+              label: 'Deshacer',
+              textColor: Colors.white,
+              onPressed: () async {
+                await _favoritesService.eliminarFavorito(widget.idMeal);
+                if (mounted) setState(() => _esFavorita = false);
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,24 +136,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       // Botón de favorito en la barra superior
       actions: [
         IconButton(
-          onPressed: () {
-            // Cambia el estado del favorito
-            setState(() => _esFavorita = !_esFavorita);
-            // Muestra confirmación con SnackBar
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _esFavorita
-                      ? 'Receta guardada en favoritos ✓'
-                      : 'Receta eliminada de favoritos',
-                ),
-                duration: const Duration(seconds: 2),
-                backgroundColor: _esFavorita
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-              ),
-            );
-          },
+          // Llama al método que guarda/elimina en SharedPreferences
+          onPressed: _toggleFavorito,
           icon: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
