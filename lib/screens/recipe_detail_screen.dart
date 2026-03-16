@@ -2,9 +2,21 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/recipe_model.dart';
 import '../services/favorites_service.dart';
+import '../services/api_service.dart';
 
-// Pantalla de detalle de una receta
-// En Clase 09 consumirá la API real; por ahora usa datos estáticos
+// ══════════════════════════════════════════════════════════════
+// CLASE 09 — RecipeDetailScreen con datos reales de la API
+// ══════════════════════════════════════════════════════════════
+//
+// Novedad: cargamos el detalle completo al abrir la pantalla
+//   - ingredientes reales (hasta 20)
+//   - instrucciones reales
+//   - categoría y área reales
+//
+// initState() lanza DOS operaciones en paralelo:
+//   1. _verificarSiEsFavorita() — SharedPreferences (ya existía)
+//   2. _cargarDetalle()         — API lookup.php (nueva en Clase 09)
+
 class RecipeDetailScreen extends StatefulWidget {
   final String idMeal;
   final String nombre;
@@ -22,33 +34,60 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  // Servicio de favoritos
   final FavoritesService _favoritesService = FavoritesService();
+  final ApiService _api = ApiService();
 
-  // Estado del botón de favorito
+  // Estado: favorito
   bool _esFavorita = false;
 
-  // ── initState: se ejecuta UNA VEZ al crear la pantalla ────────────
-  // Verificamos si esta receta ya está guardada en favoritos
+  // Estado: detalle de la receta
+  RecipeModel? _receta;
+  bool _cargandoDetalle = true;
+  bool _errorDetalle = false;
+
   @override
   void initState() {
     super.initState();
+    // Lanzamos ambas operaciones en paralelo sin bloquear la UI
     _verificarSiEsFavorita();
+    _cargarDetalle();
   }
 
-  // Consulta SharedPreferences para saber el estado real del favorito
+  // ── VERIFICAR FAVORITO (igual que antes, usa SharedPreferences) ───
   Future<void> _verificarSiEsFavorita() async {
     final esFav = await _favoritesService.esFavorita(widget.idMeal);
-    // Solo actualizamos si el widget sigue montado en el árbol
-    if (mounted) {
-      setState(() => _esFavorita = esFav);
-    }
+    if (mounted) setState(() => _esFavorita = esFav);
   }
 
-  // ── TOGGLE FAVORITO: guarda o elimina según el estado actual ──────
+  // ── CARGAR DETALLE DESDE LA API ───────────────────────────────────
+  Future<void> _cargarDetalle() async {
+    setState(() {
+      _cargandoDetalle = true;
+      _errorDetalle = false;
+    });
+
+    // await espera el endpoint lookup.php con todos los detalles
+    final receta = await _api.obtenerDetalle(widget.idMeal);
+
+    if (!mounted) return;
+
+    if (receta == null) {
+      setState(() {
+        _cargandoDetalle = false;
+        _errorDetalle = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _cargandoDetalle = false;
+      _receta = receta;
+    });
+  }
+
+  // ── TOGGLE FAVORITO ───────────────────────────────────────────────
   Future<void> _toggleFavorito() async {
     if (_esFavorita) {
-      // Ya es favorita → la eliminamos
       await _favoritesService.eliminarFavorito(widget.idMeal);
       if (mounted) {
         setState(() => _esFavorita = false);
@@ -61,17 +100,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         );
       }
     } else {
-      // No es favorita → la guardamos
-      // Construimos el modelo con los datos disponibles
-      final receta = RecipeModel(
-        idMeal:          widget.idMeal,
-        strMeal:         widget.nombre,
-        strCategory:     'Chicken',       // En Clase 09 vendrá de la API
-        strArea:         'Japanese',
-        strInstructions: 'Ver en la app con conexión a internet.',
-        strMealThumb:    widget.imagenUrl,
-        ingredientes:    [],
-      );
+      // Usamos los datos reales si ya cargaron, o los básicos si no
+      final receta = _receta ??
+          RecipeModel(
+            idMeal: widget.idMeal,
+            strMeal: widget.nombre,
+            strCategory: '',
+            strArea: '',
+            strInstructions: '',
+            strMealThumb: widget.imagenUrl,
+            ingredientes: [],
+          );
       await _favoritesService.guardarFavorito(receta);
       if (mounted) {
         setState(() => _esFavorita = true);
@@ -80,7 +119,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             content: const Text('¡Receta guardada en favoritos! ✓'),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 2),
-            // Botón para deshacer la acción
             action: SnackBarAction(
               label: 'Deshacer',
               textColor: Colors.white,
@@ -99,55 +137,43 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      // Usamos CustomScrollView para el efecto de imagen que se encoge al hacer scroll
       body: CustomScrollView(
         slivers: [
-          // ── SLIVER APP BAR: imagen grande que se colapsa ─────────
           _buildSliverAppBar(),
-
-          // ── CONTENIDO DE LA RECETA ────────────────────────────────
-          SliverToBoxAdapter(
-            child: _buildContenido(),
-          ),
+          SliverToBoxAdapter(child: _buildContenido()),
         ],
       ),
     );
   }
 
-  // ── SLIVER APP BAR CON IMAGEN ────────────────────────────────────
+  // ── SLIVER APP BAR CON IMAGEN ─────────────────────────────────────
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 280,        // Altura cuando está expandida
-      pinned: true,               // Se queda visible al hacer scroll
+      expandedHeight: 280,
+      pinned: true,
       backgroundColor: AppColors.primary,
-      // Ícono de regreso personalizado
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
         icon: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             shape: BoxShape.circle,
           ),
-          // ── ÍCONO: flecha atrás ───────────────────────────────
           child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
       ),
-      // Botón de favorito en la barra superior
       actions: [
         IconButton(
-          // Llama al método que guarda/elimina en SharedPreferences
           onPressed: _toggleFavorito,
           icon: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               shape: BoxShape.circle,
             ),
-            // ── ÍCONO: corazón (cambia según estado) ─────────────
             child: Icon(
               _esFavorita ? Icons.favorite : Icons.favorite_border,
-              // Cambia el color según si es favorita
               color: _esFavorita ? Colors.red[300] : Colors.white,
               size: 20,
             ),
@@ -155,31 +181,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ),
         const SizedBox(width: 8),
       ],
-      // Imagen grande de la receta
       flexibleSpace: FlexibleSpaceBar(
-        // ── IMAGE.NETWORK: carga imagen desde URL ─────────────────
         background: _buildImagenPrincipal(),
       ),
     );
   }
 
-  // ── IMAGEN PRINCIPAL DESDE URL ───────────────────────────────────
+  // ── IMAGEN PRINCIPAL ──────────────────────────────────────────────
   Widget _buildImagenPrincipal() {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Image.network descarga y muestra una imagen desde internet
         Image.network(
           widget.imagenUrl,
-          fit: BoxFit.cover, // La imagen cubre todo el espacio
-          // loadingBuilder: se ejecuta mientras la imagen está descargando
+          fit: BoxFit.cover,
           loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child; // Ya cargó
+            if (loadingProgress == null) return child;
             return Container(
               color: AppColors.primaryLight,
               child: Center(
                 child: CircularProgressIndicator(
-                  // Muestra el progreso real de descarga
                   value: loadingProgress.expectedTotalBytes != null
                       ? loadingProgress.cumulativeBytesLoaded /
                           loadingProgress.expectedTotalBytes!
@@ -189,31 +210,29 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
             );
           },
-          // errorBuilder: se ejecuta si la imagen no pudo cargarse
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: AppColors.primaryLight,
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // ── ÍCONO: imagen rota ──────────────────────────
-                  Icon(Icons.broken_image, size: 64, color: AppColors.primary),
-                  SizedBox(height: 8),
-                  Text('No se pudo cargar la imagen',
-                      style: AppTextStyles.bodySmall),
-                ],
-              ),
-            );
-          },
+          errorBuilder: (context, error, stack) => Container(
+            color: AppColors.primaryLight,
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, size: 64, color: AppColors.primary),
+                SizedBox(height: 8),
+                Text('No se pudo cargar la imagen',
+                    style: AppTextStyles.bodySmall),
+              ],
+            ),
+          ),
         ),
-        // Degradado oscuro en la parte inferior de la imagen
         Positioned(
           bottom: 0, left: 0, right: 0,
           height: 100,
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.transparent, Colors.black.withOpacity(0.5)],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.5),
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -224,7 +243,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── CONTENIDO PRINCIPAL DE LA RECETA ────────────────────────────
+  // ── CONTENIDO PRINCIPAL ───────────────────────────────────────────
   Widget _buildContenido() {
     return Container(
       decoration: const BoxDecoration(
@@ -238,57 +257,51 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── NOMBRE DE LA RECETA ───────────────────────────────
-          Text(
-            widget.nombre,
-            // Usamos el estilo heading1 del tema centralizado
-            style: AppTextStyles.heading2,
-          ),
+          // Nombre (de los parámetros — disponible de inmediato)
+          Text(widget.nombre, style: AppTextStyles.heading2),
 
           const SizedBox(height: 12),
 
-          // ── BADGES DE METADATA (categoría, área, tiempo) ─────
+          // Badges: se muestran con datos reales cuando cargan
           _buildMetadataBadges(),
 
           const SizedBox(height: 24),
-
-          // ── DIVIDER: línea separadora ─────────────────────────
           const Divider(color: AppColors.grey200, height: 1),
-
           const SizedBox(height: 20),
 
-          // ── SECCIÓN: INGREDIENTES ─────────────────────────────
+          // Ingredientes e instrucciones: muestran spinner o datos reales
           _buildSeccionIngredientes(),
 
           const SizedBox(height: 24),
-
           const Divider(color: AppColors.grey200, height: 1),
-
           const SizedBox(height: 20),
 
-          // ── SECCIÓN: INSTRUCCIONES ────────────────────────────
           _buildSeccionInstrucciones(),
-
           const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  // ── BADGES DE METADATA ───────────────────────────────────────────
+  // ── BADGES DE METADATA ────────────────────────────────────────────
   Widget _buildMetadataBadges() {
+    // Si ya cargaron los datos reales, los usamos; si no, mostramos '...'
+    final categoria = _receta?.strCategory ?? '...';
+    final area      = _receta?.strArea      ?? '...';
+
     return Wrap(
-      spacing: 10,  // Espacio horizontal entre badges
-      runSpacing: 8, // Espacio vertical si pasan a otra línea
+      spacing: 10,
+      runSpacing: 8,
       children: [
-        _buildBadge(icon: Icons.restaurant_menu, texto: 'Chicken'),
-        _buildBadge(icon: Icons.public,          texto: 'Japanese'),
-        _buildBadge(icon: Icons.timer,           texto: '45 min'),
+        _buildBadge(icon: Icons.restaurant_menu, texto: categoria),
+        _buildBadge(icon: Icons.public,          texto: area),
+        // Tiempo siempre es estimado (la API no lo provee)
+        _buildBadge(icon: Icons.timer,           texto: '~30-45 min'),
       ],
     );
   }
 
-  // ── BADGE INDIVIDUAL ─────────────────────────────────────────────
+  // ── BADGE INDIVIDUAL ──────────────────────────────────────────────
   Widget _buildBadge({required IconData icon, required String texto}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -299,10 +312,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── ÍCONO del badge ───────────────────────────────────
           Icon(icon, size: 14, color: AppColors.primary),
           const SizedBox(width: 6),
-          // ── TEXTO del badge con estilo label ─────────────────
           Text(
             texto,
             style: AppTextStyles.label.copyWith(color: AppColors.primary),
@@ -312,22 +323,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── SECCIÓN: INGREDIENTES ────────────────────────────────────────
+  // ── SECCIÓN: INGREDIENTES ─────────────────────────────────────────
   Widget _buildSeccionIngredientes() {
-    // Ingredientes de ejemplo (datos reales vendrán de la API en Clase 09)
-    final ingredientes = [
-      {'ingrediente': 'Soy Sauce',       'cantidad': '3/4 cup'},
-      {'ingrediente': 'Water',           'cantidad': '1/2 cup'},
-      {'ingrediente': 'Brown Sugar',     'cantidad': '1/4 cup'},
-      {'ingrediente': 'Ground Ginger',   'cantidad': '1/2 tsp'},
-      {'ingrediente': 'Minced Garlic',   'cantidad': '3 cloves'},
-      {'ingrediente': 'Chicken Breast',  'cantidad': '4 pieces'},
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Título de sección con ícono ───────────────────────
         Row(
           children: [
             const Icon(Icons.kitchen, color: AppColors.primary, size: 22),
@@ -337,38 +337,95 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ),
         const SizedBox(height: 14),
 
-        // Lista de ingredientes
-        ...ingredientes.map((item) => _buildIngredienteItem(
-              ingrediente: item['ingrediente']!,
-              cantidad: item['cantidad']!,
-            )),
+        // Si está cargando → spinner
+        if (_cargandoDetalle)
+          const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          )
+        // Si hubo error → mensaje
+        else if (_errorDetalle)
+          _buildMensajeError()
+        // Si ya cargaron → lista real de ingredientes
+        else
+          ...(_receta?.ingredientes ?? []).map(
+            (item) => _buildIngredienteItem(
+              ingrediente: item['ingrediente'] ?? '',
+              cantidad:    item['cantidad']    ?? '',
+            ),
+          ),
       ],
     );
   }
 
-  // ── FILA DE UN INGREDIENTE ───────────────────────────────────────
-  Widget _buildIngredienteItem({
-    required String ingrediente,
-    required String cantidad,
-  }) {
+  // ── SECCIÓN: INSTRUCCIONES ────────────────────────────────────────
+  Widget _buildSeccionInstrucciones() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.format_list_numbered,
+                color: AppColors.primary, size: 22),
+            const SizedBox(width: 8),
+            Text('Instrucciones', style: AppTextStyles.heading3),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        if (_cargandoDetalle)
+          const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          )
+        else if (_errorDetalle)
+          _buildMensajeError()
+        else
+          _buildPasosInstrucciones(_receta?.strInstructions ?? ''),
+      ],
+    );
+  }
+
+  // ── MENSAJE DE ERROR INLINE ───────────────────────────────────────
+  Widget _buildMensajeError() {
+    return Column(
+      children: [
+        const Icon(Icons.wifi_off, color: AppColors.primary, size: 40),
+        const SizedBox(height: 8),
+        Text(
+          'No se pudieron cargar los datos.\nVerifica tu conexión.',
+          style: AppTextStyles.bodyMedium
+              .copyWith(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: _cargarDetalle,
+          icon: const Icon(Icons.refresh, color: AppColors.primary),
+          label: const Text('Reintentar',
+              style: TextStyle(color: AppColors.primary)),
+        ),
+      ],
+    );
+  }
+
+  // ── FILA DE UN INGREDIENTE ────────────────────────────────────────
+  Widget _buildIngredienteItem(
+      {required String ingrediente, required String cantidad}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          // Punto decorativo naranja
           Container(
-            width: 8, height: 8,
+            width: 8,
+            height: 8,
             decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: 12),
-          // ── Nombre del ingrediente (texto principal) ──────────
           Expanded(
             child: Text(ingrediente, style: AppTextStyles.bodyMedium),
           ),
-          // ── Cantidad (texto secundario con color diferente) ───
           Text(
             cantidad,
             style: AppTextStyles.bodyMedium.copyWith(
@@ -381,51 +438,46 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── SECCIÓN: INSTRUCCIONES ───────────────────────────────────────
-  Widget _buildSeccionInstrucciones() {
-    // Instrucciones de ejemplo divididas en pasos
-    final pasos = [
-      'Precalienta el horno a 175°C (350°F).',
-      'Mezcla la salsa de soya, agua, azúcar morena, jengibre y ajo en un tazón.',
-      'Coloca el pollo en un molde para hornear y vierte la salsa encima.',
-      'Hornea por 35-45 minutos hasta que el pollo esté bien cocido.',
-      'Sirve sobre arroz blanco y disfruta.',
-    ];
+  // ── INSTRUCCIONES DIVIDIDAS EN PASOS ─────────────────────────────
+  // La API devuelve las instrucciones como un String largo.
+  // Las dividimos por punto o salto de línea para mostrar como pasos.
+  Widget _buildPasosInstrucciones(String instrucciones) {
+    if (instrucciones.isEmpty) {
+      return Text(
+        'Instrucciones no disponibles.',
+        style: AppTextStyles.bodyMedium
+            .copyWith(color: AppColors.textSecondary),
+      );
+    }
+
+    // Dividimos el texto en pasos: por '\r\n' o por '. ' al final de oración
+    final pasos = instrucciones
+        .split(RegExp(r'\r\n|\n'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Título de sección con ícono ───────────────────────
-        Row(
-          children: [
-            const Icon(Icons.format_list_numbered,
-                color: AppColors.primary, size: 22),
-            const SizedBox(width: 8),
-            Text('Instrucciones', style: AppTextStyles.heading3),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        // Lista de pasos numerados
-        ...pasos.asMap().entries.map((entry) {
-          final numero = entry.key + 1;
-          final paso   = entry.value;
-          return _buildPasoItem(numero: numero, descripcion: paso);
-        }),
-      ],
+      children: pasos.asMap().entries.map((entry) {
+        return _buildPasoItem(
+          numero: entry.key + 1,
+          descripcion: entry.value,
+        );
+      }).toList(),
     );
   }
 
-  // ── FILA DE UN PASO DE INSTRUCCIÓN ──────────────────────────────
-  Widget _buildPasoItem({required int numero, required String descripcion}) {
+  // ── FILA DE UN PASO ───────────────────────────────────────────────
+  Widget _buildPasoItem(
+      {required int numero, required String descripcion}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Número del paso (círculo naranja) ─────────────────
           Container(
-            width: 28, height: 28,
+            width: 28,
+            height: 28,
             decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
@@ -442,13 +494,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // ── Descripción del paso ──────────────────────────────
           Expanded(
-            child: Text(
-              descripcion,
-              // bodyLarge tiene height: 1.6 para mejor legibilidad
-              style: AppTextStyles.bodyMedium,
-            ),
+            child: Text(descripcion, style: AppTextStyles.bodyMedium),
           ),
         ],
       ),
