@@ -1,92 +1,183 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recipe_model.dart';
+import 'api_service.dart' show ApiService;
+import 'auth_service.dart';
 
-// Servicio para gestionar los favoritos guardados localmente
-// Usa SharedPreferences para persistir datos entre sesiones
+// ══════════════════════════════════════════════════════════════
+// FavoritesService — favoritos en servidor (con login) o local
+// ══════════════════════════════════════════════════════════════
+//
+// Estrategia dual:
+//   - Usuario logueado   → favoritos en el servidor (FastAPI)
+//   - Usuario sin login  → favoritos locales (SharedPreferences)
+//
+// Esto permite que la app funcione aunque no esté logueado.
+
 class FavoritesService {
-  // Clave con la que guardamos la lista en SharedPreferences
-  static const String _claveFavoritos = 'favoritos';
+  final AuthService _auth = AuthService();
+  static const String _claveLocal = 'favoritos';
 
-  // ── OBTENER INSTANCIA DE SHAREDPREFERENCES ─────────────────────
-  // SharedPreferences.getInstance() es asíncrono porque accede al disco
-  Future<SharedPreferences> get _prefs async =>
-      await SharedPreferences.getInstance();
+  // ── HEADERS CON JWT ───────────────────────────────────────────────
+  Future<Map<String, String>?> _headersAuth() async {
+    final token = await _auth.obtenerToken();
+    if (token == null) return null;
+    return {
+      'Content-Type':  'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
-  // ── LEER: obtener todas las recetas favoritas ──────────────────
-  Future<List<RecipeModel>> obtenerFavoritos() async {
-    final prefs = await _prefs;
+  // ══════════════════════════════════════════════════════════════════
+  // FAVORITOS EN SERVIDOR (usuario logueado)
+  // ══════════════════════════════════════════════════════════════════
 
-    // Leemos la lista de strings JSON guardada bajo la clave
-    // Si no existe aún, devuelve una lista vacía
-    final List<String> jsonList =
-        prefs.getStringList(_claveFavoritos) ?? [];
+  Future<List<RecipeModel>> _obtenerFavoritosServidor(Map<String, String> headers) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiService.baseUrl}/favoritos'),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        final data  = jsonDecode(response.body) as Map<String, dynamic>;
+        final meals = data['meals'];
+        if (meals == null) return [];
+        return (meals as List)
+            .map((j) => RecipeModel.fromJson(j as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
 
-    // Convertimos cada string JSON a un objeto RecipeModel
-    return jsonList.map((jsonString) {
-      final Map<String, dynamic> json = jsonDecode(jsonString);
-      return RecipeModel.fromJson(json);
+  Future<bool> _guardarFavoritoServidor(
+      RecipeModel receta, Map<String, String> headers) async {
+    try {
+      final id = int.tryParse(receta.idMeal);
+      if (id == null) return false;
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/favoritos/$id'),
+        headers: headers,
+      );
+      return response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> _eliminarFavoritoServidor(
+      String idMeal, Map<String, String> headers) async {
+    try {
+      final id = int.tryParse(idMeal);
+      if (id == null) return;
+      await http.delete(
+        Uri.parse('${ApiService.baseUrl}/favoritos/$id'),
+        headers: headers,
+      );
+    } catch (e) {
+      // silencioso
+    }
+  }
+
+  Future<bool> _esFavoritaServidor(
+      String idMeal, Map<String, String> headers) async {
+    try {
+      final id = int.tryParse(idMeal);
+      if (id == null) return false;
+      final response = await http.get(
+        Uri.parse('${ApiService.baseUrl}/favoritos/verificar/$id'),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['esFavorita'] as bool? ?? false;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // FAVORITOS LOCALES (SharedPreferences — sin login)
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<List<RecipeModel>> _obtenerFavoritosLocal() async {
+    final prefs   = await SharedPreferences.getInstance();
+    final jsonList = prefs.getStringList(_claveLocal) ?? [];
+    return jsonList.map((s) {
+      return RecipeModel.fromJson(jsonDecode(s) as Map<String, dynamic>);
     }).toList();
   }
 
-  // ── GUARDAR: agregar una receta a favoritos ────────────────────
-  Future<bool> guardarFavorito(RecipeModel receta) async {
-    final prefs = await _prefs;
-
-    // Obtenemos la lista actual
-    final List<String> jsonList =
-        prefs.getStringList(_claveFavoritos) ?? [];
-
-    // Verificamos que no esté duplicada (por ID)
-    final yaExiste = jsonList.any((jsonString) {
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      return json['idMeal'] == receta.idMeal;
+  Future<bool> _guardarFavoritoLocal(RecipeModel receta) async {
+    final prefs    = await SharedPreferences.getInstance();
+    final jsonList = prefs.getStringList(_claveLocal) ?? [];
+    final yaExiste = jsonList.any((s) {
+      final j = jsonDecode(s) as Map<String, dynamic>;
+      return j['idMeal'] == receta.idMeal;
     });
-
-    if (yaExiste) return false; // Ya estaba guardada, no duplicamos
-
-    // Convertimos la receta a JSON y la agregamos a la lista
+    if (yaExiste) return false;
     jsonList.add(jsonEncode(receta.toJson()));
-
-    // Guardamos la lista actualizada en SharedPreferences
-    await prefs.setStringList(_claveFavoritos, jsonList);
-    return true; // Guardado exitoso
+    await prefs.setStringList(_claveLocal, jsonList);
+    return true;
   }
 
-  // ── ELIMINAR: quitar una receta de favoritos ───────────────────
+  Future<void> _eliminarFavoritoLocal(String idMeal) async {
+    final prefs    = await SharedPreferences.getInstance();
+    final jsonList = prefs.getStringList(_claveLocal) ?? [];
+    jsonList.removeWhere((s) {
+      final j = jsonDecode(s) as Map<String, dynamic>;
+      return j['idMeal'] == idMeal;
+    });
+    await prefs.setStringList(_claveLocal, jsonList);
+  }
+
+  Future<bool> _esFavoritaLocal(String idMeal) async {
+    final prefs    = await SharedPreferences.getInstance();
+    final jsonList = prefs.getStringList(_claveLocal) ?? [];
+    return jsonList.any((s) {
+      final j = jsonDecode(s) as Map<String, dynamic>;
+      return j['idMeal'] == idMeal;
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // API PÚBLICA — decide automáticamente servidor o local
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<List<RecipeModel>> obtenerFavoritos() async {
+    final headers = await _headersAuth();
+    if (headers != null) return _obtenerFavoritosServidor(headers);
+    return _obtenerFavoritosLocal();
+  }
+
+  Future<bool> guardarFavorito(RecipeModel receta) async {
+    final headers = await _headersAuth();
+    if (headers != null) return _guardarFavoritoServidor(receta, headers);
+    return _guardarFavoritoLocal(receta);
+  }
+
   Future<void> eliminarFavorito(String idMeal) async {
-    final prefs = await _prefs;
-
-    final List<String> jsonList =
-        prefs.getStringList(_claveFavoritos) ?? [];
-
-    // Filtramos la lista quitando la receta con el ID indicado
-    jsonList.removeWhere((jsonString) {
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      return json['idMeal'] == idMeal;
-    });
-
-    // Guardamos la lista ya sin esa receta
-    await prefs.setStringList(_claveFavoritos, jsonList);
+    final headers = await _headersAuth();
+    if (headers != null) {
+      await _eliminarFavoritoServidor(idMeal, headers);
+    } else {
+      await _eliminarFavoritoLocal(idMeal);
+    }
   }
 
-  // ── VERIFICAR: saber si una receta ya está en favoritos ────────
   Future<bool> esFavorita(String idMeal) async {
-    final prefs = await _prefs;
-
-    final List<String> jsonList =
-        prefs.getStringList(_claveFavoritos) ?? [];
-
-    // Buscamos si algún elemento tiene el mismo ID
-    return jsonList.any((jsonString) {
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      return json['idMeal'] == idMeal;
-    });
+    final headers = await _headersAuth();
+    if (headers != null) return _esFavoritaServidor(idMeal, headers);
+    return _esFavoritaLocal(idMeal);
   }
 
-  // ── LIMPIAR: eliminar todos los favoritos ──────────────────────
   Future<void> limpiarFavoritos() async {
-    final prefs = await _prefs;
-    await prefs.remove(_claveFavoritos);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_claveLocal);
   }
 }

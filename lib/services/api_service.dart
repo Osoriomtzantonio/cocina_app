@@ -4,32 +4,38 @@ import '../models/recipe_model.dart';
 import '../models/category_model.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 09 — Consumo de APIs con async/await
+// CLASE 09 — Consumo de API propia con FastAPI
 // ══════════════════════════════════════════════════════════════
 //
-// ApiService centraliza TODAS las llamadas a TheMealDB.
-// Cada método:
-//   1. Es async (puede usar await)
-//   2. Devuelve un Future (promesa de datos)
-//   3. Usa try/catch para manejar errores de red
+// ApiService centraliza TODAS las llamadas al backend FastAPI.
+// El formato JSON es idéntico al de TheMealDB, por lo que
+// RecipeModel y CategoryModel no necesitan cambios.
 //
-// Endpoints usados:
-//   /random.php              → receta aleatoria
-//   /categories.php          → lista de categorías
-//   /filter.php?c=Chicken    → recetas por categoría (simplificado)
-//   /search.php?s=chicken    → buscar recetas por nombre (completo)
-//   /lookup.php?i=52772      → detalle de una receta por ID
+// Endpoints:
+//   /recetas/aleatoria        → receta aleatoria
+//   /categorias               → lista de categorías
+//   /recetas/categoria/{cat}  → recetas por categoría (simplificado)
+//   /recetas/buscar?s=query   → buscar por nombre (completo)
+//   /recetas/{id}             → detalle por ID
+//   /auth/registro            → registrar usuario
+//   /auth/login               → iniciar sesión
+//   /favoritos                → favoritos del usuario autenticado
 
 class ApiService {
-  // URL base — la misma para todos los endpoints
-  static const String _baseUrl = 'https://www.themealdb.com/api/json/v1/1';
+  // ── URL BASE ───────────────────────────────────────────────────────
+  // Emulador Android: 10.0.2.2 apunta a localhost de la PC
+  // Celular físico:   usa la IP local de tu PC (ej: 192.168.1.x)
+  // Producción:       cambia por el dominio del servidor
+  // Accesible desde AuthService y FavoritesService
+  static const String baseUrl  = 'http://10.0.2.2:8000';
+  static const String _baseUrl = baseUrl;
 
   // ── RECETA ALEATORIA ──────────────────────────────────────────────
   // Devuelve una RecipeModel con todos sus datos, o null si hubo error
   Future<RecipeModel?> obtenerRecetaAleatoria() async {
     try {
       // await pausa SOLO esta función hasta recibir la respuesta HTTP
-      final response = await http.get(Uri.parse('$_baseUrl/random.php'));
+      final response = await http.get(Uri.parse('$_baseUrl/recetas/aleatoria'));
 
       if (response.statusCode == 200) {
         // jsonDecode convierte el String JSON en un Map de Dart
@@ -46,10 +52,9 @@ class ApiService {
   }
 
   // ── CATEGORÍAS ────────────────────────────────────────────────────
-  // Devuelve todas las categorías de TheMealDB
   Future<List<CategoryModel>> obtenerCategorias() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/categories.php'));
+      final response = await http.get(Uri.parse('$_baseUrl/categorias'));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -72,7 +77,7 @@ class ApiService {
   // Para el detalle completo se usa obtenerDetalle().
   Future<List<RecipeModel>> obtenerRecetasPorCategoria(String categoria) async {
     try {
-      final url = '$_baseUrl/filter.php?c=${Uri.encodeComponent(categoria)}';
+      final url = '$_baseUrl/recetas/categoria/${Uri.encodeComponent(categoria)}';
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -97,7 +102,7 @@ class ApiService {
     if (query.trim().isEmpty) return [];
 
     try {
-      final url = '$_baseUrl/search.php?s=${Uri.encodeComponent(query)}';
+      final url = '$_baseUrl/recetas/buscar?s=${Uri.encodeComponent(query)}';
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -120,7 +125,7 @@ class ApiService {
   Future<RecipeModel?> obtenerDetalle(String idMeal) async {
     try {
       final response =
-          await http.get(Uri.parse('$_baseUrl/lookup.php?i=$idMeal'));
+          await http.get(Uri.parse('$_baseUrl/recetas/$idMeal'));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
