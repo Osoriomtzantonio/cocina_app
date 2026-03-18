@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/recipe_model.dart';
 import '../models/category_model.dart';
@@ -22,13 +23,14 @@ import '../models/category_model.dart';
 //   /favoritos                → favoritos del usuario autenticado
 
 class ApiService {
-  // ── URL BASE ───────────────────────────────────────────────────────
-  // Emulador Android: 10.0.2.2 apunta a localhost de la PC
-  // Celular físico:   usa la IP local de tu PC (ej: 192.168.1.x)
-  // Producción:       cambia por el dominio del servidor
-  // Accesible desde AuthService y FavoritesService
-  static const String baseUrl  = 'http://10.0.2.2:8000';
-  static const String _baseUrl = baseUrl;
+  // ── URL BASE (se adapta según la plataforma) ──────────────────────
+  //   Web/Desktop → localhost  (Flutter corre en el mismo equipo)
+  //   Emulador Android → 10.0.2.2  (alias de localhost dentro del emulador)
+  //   Celular físico → cambia por la IP local de tu PC (ej: 192.168.1.x)
+  static String get baseUrl =>
+      kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+
+  static String get _baseUrl => baseUrl;
 
   // ── RECETA ALEATORIA ──────────────────────────────────────────────
   // Devuelve una RecipeModel con todos sus datos, o null si hubo error
