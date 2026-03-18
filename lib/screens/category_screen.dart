@@ -6,16 +6,25 @@ import '../widgets/recipe_grid.dart';
 import '../services/api_service.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 09 — CategoryScreen conectada a la API real
+// CLASE 10 — CategoryScreen con FutureBuilder
 // ══════════════════════════════════════════════════════════════
 //
-// Cambio respecto a Clase 07:
-//   Antes: StatelessWidget con datos hardcodeados
-//   Ahora: StatefulWidget que llama a la API en initState()
+// Comparación directa con Clase 09:
 //
-// Nota: el endpoint filter.php devuelve datos SIMPLIFICADOS
-//   (solo idMeal, strMeal, strMealThumb — sin ingredientes ni instrucciones)
-//   El detalle completo lo carga RecipeDetailScreen al abrir cada receta.
+//   Clase 09 (setState manual):
+//     bool _cargando = true;
+//     String? _error;
+//     List<RecipeModel> _recetas = [];
+//
+//     Future<void> _cargarRecetas() async {
+//       setState(() => _cargando = true);
+//       final r = await _api.obtenerRecetasPorCategoria(categoria);
+//       setState(() { _cargando = false; _recetas = r; });
+//     }
+//
+//   Clase 10 (FutureBuilder):
+//     late final Future<List<RecipeModel>> _futureRecetas;  // solo esto
+//     // No hay bool _cargando ni String _error — FutureBuilder lo hace todo
 
 class CategoryScreen extends StatefulWidget {
   final String categoria;
@@ -29,45 +38,19 @@ class CategoryScreen extends StatefulWidget {
 class _CategoryScreenState extends State<CategoryScreen> {
   final ApiService _api = ApiService();
 
-  // Estados de la pantalla
-  bool _cargando = true;
-  String? _error;
-  List<RecipeModel> _recetas = [];
+  // ── EL FUTURE SE CREA UNA VEZ ────────────────────────────────────
+  // late final garantiza que no se recrea en cada rebuild
+  late final Future<List<RecipeModel>> _futureRecetas;
 
   @override
   void initState() {
     super.initState();
-    // Cargamos las recetas de esta categoría al crear la pantalla
-    _cargarRecetas();
-  }
-
-  Future<void> _cargarRecetas() async {
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
-
-    // await espera la respuesta del endpoint filter.php
-    final resultado = await _api.obtenerRecetasPorCategoria(widget.categoria);
-
-    if (!mounted) return;
-
-    if (resultado.isEmpty) {
-      setState(() {
-        _cargando = false;
-        _error = 'No se encontraron recetas para "${widget.categoria}"';
-      });
-      return;
-    }
-
-    setState(() {
-      _cargando = false;
-      // copyWith: inyectamos el nombre de la categoría en cada receta
-      // porque filter.php no lo incluye (datos simplificados)
-      _recetas = resultado
-          .map((r) => r.copyWith(strCategory: widget.categoria))
-          .toList();
-    });
+    // Lanzamos la petición y guardamos el Future
+    _futureRecetas = _api
+        .obtenerRecetasPorCategoria(widget.categoria)
+        .then((lista) =>
+            // Inyectamos la categoría porque filter endpoint no la incluye
+            lista.map((r) => r.copyWith(strCategory: widget.categoria)).toList());
   }
 
   @override
@@ -85,18 +68,51 @@ class _CategoryScreenState extends State<CategoryScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildEncabezado(responsive),
-          Expanded(child: _buildContenido()),
-        ],
+      body: FutureBuilder<List<RecipeModel>>(
+        future: _futureRecetas,
+        builder: (context, snapshot) {
+          // ── ESTADO: waiting ─────────────────────────────────────
+          // El Future aún no terminó — mostramos encabezado con "..."
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Column(
+              children: [
+                _buildEncabezado('...', responsive),
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // ── ESTADO: done con error ───────────────────────────────
+          // El Future terminó pero lanzó una excepción
+          if (snapshot.hasError) {
+            return _buildEstadoError(snapshot.error.toString());
+          }
+
+          // ── ESTADO: done con datos ───────────────────────────────
+          // snapshot.data puede ser una lista vacía o con elementos
+          final recetas = snapshot.data ?? [];
+
+          if (recetas.isEmpty) {
+            return _buildSinResultados();
+          }
+
+          return Column(
+            children: [
+              _buildEncabezado('${recetas.length}', responsive),
+              Expanded(child: RecipeGrid(recetas: recetas)),
+            ],
+          );
+        },
       ),
     );
   }
 
   // ── ENCABEZADO ────────────────────────────────────────────────────
-  Widget _buildEncabezado(ResponsiveHelper responsive) {
+  Widget _buildEncabezado(String total, ResponsiveHelper responsive) {
     final tipoDispositivo = responsive.esTabletGrande
         ? 'Tablet grande (4 cols)'
         : responsive.esTablet
@@ -104,8 +120,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
             : responsive.esHorizontal
                 ? 'Horizontal (3 cols)'
                 : 'Celular (2 cols)';
-
-    final total = _cargando ? '...' : '${_recetas.length}';
 
     return Container(
       color: AppColors.primary,
@@ -134,16 +148,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
               children: [
                 Icon(
                   responsive.esCelular ? Icons.smartphone : Icons.tablet_mac,
-                  color: Colors.white,
-                  size: 13,
+                  color: Colors.white, size: 13,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   tipoDispositivo,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -154,47 +165,43 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  // ── CONTENIDO CENTRAL ─────────────────────────────────────────────
-  Widget _buildContenido() {
-    // Estado: cargando
-    if (_cargando) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
-
-    // Estado: error
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.wifi_off, size: 64, color: AppColors.primary),
-              const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: AppTextStyles.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _cargarRecetas,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
+  // ── ESTADO: ERROR ─────────────────────────────────────────────────
+  Widget _buildEstadoError(String mensaje) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off, size: 64, color: AppColors.primary),
+            const SizedBox(height: 16),
+            Text(
+              'No se pudo cargar la categoría.\nVerifica tu conexión.',
+              style: AppTextStyles.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    // Estado: datos cargados — mostramos el grid responsive
-    return RecipeGrid(recetas: _recetas);
+  // ── ESTADO: SIN RESULTADOS ────────────────────────────────────────
+  Widget _buildSinResultados() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.no_meals, size: 72,
+              color: AppColors.primary.withValues(alpha: 0.4)),
+          const SizedBox(height: 16),
+          Text(
+            'No hay recetas en "${widget.categoria}"',
+            style: AppTextStyles.heading3,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }
