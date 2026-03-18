@@ -20,10 +20,10 @@ class _MainScreenState extends State<MainScreen> {
 
   // Lista de pantallas que corresponden a cada tab
   // Se crean una sola vez y se mantienen en memoria al cambiar de tab
-  final List<Widget> _pantallas = const [
-    HomeScreen(),
-    SearchScreen(),
-    FavoritesScreen(),
+  final List<Widget> _pantallas = [
+    const HomeScreen(),
+    SearchScreen(),        // no const: tiene TextEditingController interno
+    const FavoritesScreen(),
   ];
 
   // Títulos de la AppBar para cada tab

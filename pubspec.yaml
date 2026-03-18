@@ -41,6 +41,9 @@ dependencies:
   # Almacenamiento local clave-valor para guardar favoritos offline
   shared_preferences: ^2.3.0
 
+  # Manejador de estado, navegación y dependencias
+  get: ^4.6.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

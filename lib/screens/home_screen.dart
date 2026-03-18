@@ -1,188 +1,42 @@
 import 'package:flutter/material.dart';
-import '../widgets/recipe_grid.dart';
-import '../theme/app_theme.dart';
-import '../models/recipe_model.dart';
+import 'package:get/get.dart';
+import '../controllers/home_controller.dart';
 import '../models/category_model.dart';
-import '../services/api_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/recipe_grid.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 09 — HomeScreen conectada a la API real
+// CLASE 11 — HomeScreen con GetX
 // ══════════════════════════════════════════════════════════════
 //
-// Patrón de carga con setState (manual):
-//   1. initState() llama a _cargarDatos()
-//   2. _cargarDatos() es async: usa await para esperar la API
-//   3. Cuando llegan los datos, setState() redibuja la pantalla
+// Cambio respecto a Clase 09:
+//   Antes: StatefulWidget con _cargando, _error, _recetaDia, _categorias...
+//   Ahora: StatelessWidget — CERO variables de estado aquí
 //
-// Estados posibles:
-//   _cargandoInicial = true  → muestra spinner
-//   _error != null           → muestra mensaje de error + botón reintentar
-//   datos cargados           → muestra el contenido real
+// Todo el estado vive en HomeController.
+// La UI solo usa Obx() para reaccionar a los cambios.
+//
+// Get.put(HomeController()) registra el controlador la primera vez
+// y lo devuelve si ya existe (no crea duplicados).
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  // ── SERVICIO DE API ───────────────────────────────────────────────
-  final ApiService _api = ApiService();
-
-  // ── ESTADO: CARGA Y ERROR ─────────────────────────────────────────
-  bool _cargandoInicial = true;
-  String? _error;
-
-  // ── ESTADO: RECETA DEL DÍA ────────────────────────────────────────
-  RecipeModel? _recetaDia;
-  bool _cargandoReceta = false; // spinner del botón de refrescar
-
-  // ── ESTADO: CATEGORÍAS Y RECETAS POPULARES ────────────────────────
-  List<CategoryModel> _categorias = [];
-  List<RecipeModel> _recetasPopulares = [];
-
-  // ── initState: se ejecuta UNA VEZ al crear el widget ─────────────
-  // Lugar correcto para lanzar la carga inicial de datos
-  @override
-  void initState() {
-    super.initState();
-    _cargarDatos();
-  }
-
-  // ── CARGA INICIAL: receta del día + categorías + populares ────────
-  Future<void> _cargarDatos() async {
-    setState(() {
-      _cargandoInicial = true;
-      _error = null;
-    });
-
-    // Future.wait ejecuta las tres peticiones EN PARALELO
-    // Es más eficiente que usar await una por una
-    final resultados = await Future.wait([
-      _api.obtenerRecetaAleatoria(),   // índice 0
-      _api.obtenerCategorias(),        // índice 1
-      _api.buscarRecetas('chicken'),   // índice 2 — usamos como "populares"
-    ]);
-
-    // Si el widget fue destruido mientras esperábamos, no actualizamos
-    if (!mounted) return;
-
-    final receta     = resultados[0] as RecipeModel?;
-    final categorias = resultados[1] as List<CategoryModel>;
-    final populares  = resultados[2] as List<RecipeModel>;
-
-    // Si no llegó ni la receta ni las categorías → mostramos error
-    if (receta == null && categorias.isEmpty) {
-      setState(() {
-        _cargandoInicial = false;
-        _error = 'Sin conexión a internet.\nVerifica tu red e intenta de nuevo.';
-      });
-      return;
-    }
-
-    setState(() {
-      _cargandoInicial  = false;
-      _recetaDia        = receta;
-      _categorias       = categorias;
-      // Limitamos a 6 recetas para no saturar el grid
-      _recetasPopulares = populares.length > 6 ? populares.sublist(0, 6) : populares;
-    });
-  }
-
-  // ── REFRESCAR RECETA DEL DÍA ──────────────────────────────────────
-  Future<void> _recargarRecetaDia() async {
-    setState(() => _cargandoReceta = true);
-
-    // await espera la respuesta de la API antes de continuar
-    final nueva = await _api.obtenerRecetaAleatoria();
-
-    if (!mounted) return;
-
-    setState(() {
-      _cargandoReceta = false;
-      if (nueva != null) _recetaDia = nueva; // solo actualizamos si llegó algo
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // ── ESTADO DE CARGA INICIAL ───────────────────────────────────
-    if (_cargandoInicial) return _buildCargando();
+    // Registramos (o recuperamos) el controlador
+    final ctrl = Get.put(HomeController());
 
-    // ── ESTADO DE ERROR ───────────────────────────────────────────
-    if (_error != null) return _buildError();
-
-    // ── CONTENIDO NORMAL ─────────────────────────────────────────
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        // El usuario puede hacer pull-to-refresh para recargar todo
-        onRefresh: _cargarDatos,
-        color: AppColors.primary,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: _buildRecetaDelDia(),
-              ),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Categorías',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildCategorias(),
-
-              const SizedBox(height: 20),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Recetas populares',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                    Text(
-                      'Ver todas',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFFFF6B35),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildRecetasPopulares(),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
+    // Obx escucha TODOS los .obs que se usen dentro del closure
+    // y reconstruye el widget cuando alguno cambia
+    return Obx(() {
+      if (ctrl.cargando.value) return _buildCargando();
+      if (ctrl.error.value != null) return _buildError(ctrl);
+      return _buildContenido(ctrl);
+    });
   }
 
-  // ── PANTALLA DE CARGA INICIAL ─────────────────────────────────────
+  // ── PANTALLA DE CARGA ─────────────────────────────────────────────
   Widget _buildCargando() {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -192,19 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const CircularProgressIndicator(color: AppColors.primary),
             const SizedBox(height: 20),
-            Text(
-              'Cargando recetas...',
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary),
-            ),
+            Text('Cargando recetas...',
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.textSecondary)),
           ],
         ),
       ),
     );
   }
 
-  // ── PANTALLA DE ERROR CON BOTÓN REINTENTAR ────────────────────────
-  Widget _buildError() {
+  // ── PANTALLA DE ERROR ─────────────────────────────────────────────
+  Widget _buildError(HomeController ctrl) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
@@ -215,14 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Icon(Icons.wifi_off, size: 72, color: AppColors.primary),
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: AppTextStyles.heading3,
-                textAlign: TextAlign.center,
-              ),
+              Text(ctrl.error.value!,
+                  style: AppTextStyles.heading3, textAlign: TextAlign.center),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _cargarDatos,
+                // ctrl.cargarDatos() es un Future — GetX no necesita setState
+                onPressed: ctrl.cargarDatos,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reintentar'),
                 style: ElevatedButton.styleFrom(
@@ -237,7 +87,68 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── ENCABEZADO CON DEGRADADO ──────────────────────────────────────
+  // ── CONTENIDO PRINCIPAL ───────────────────────────────────────────
+  Widget _buildContenido(HomeController ctrl) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: RefreshIndicator(
+        onRefresh: ctrl.cargarDatos,
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildRecetaDelDia(ctrl),
+              ),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('Categorías',
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333))),
+              ),
+              const SizedBox(height: 12),
+              _buildCategorias(ctrl),
+
+              const SizedBox(height: 20),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Recetas populares',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF333333))),
+                    Text('Ver todas',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFFFF6B35),
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Obx granular: solo reconstruye este grid cuando populares cambie
+              Obx(() => RecipeGrid(recetas: ctrl.populares, shrinkWrap: true)),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── ENCABEZADO ────────────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -256,19 +167,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '¡Hola, cocinero! 👨‍🍳',
-            style: TextStyle(fontSize: 14, color: Colors.white70),
-          ),
+          const Text('¡Hola, cocinero! 👨‍🍳',
+              style: TextStyle(fontSize: 14, color: Colors.white70)),
           const SizedBox(height: 4),
-          const Text(
-            '¿Qué cocinamos hoy?',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+          const Text('¿Qué cocinamos hoy?',
+              style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white)),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -287,10 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(Icons.search, color: Color(0xFFFF6B35)),
                 SizedBox(width: 10),
-                Text(
-                  'Buscar recetas...',
-                  style: TextStyle(color: Colors.grey, fontSize: 15),
-                ),
+                Text('Buscar recetas...',
+                    style: TextStyle(color: Colors.grey, fontSize: 15)),
               ],
             ),
           ),
@@ -299,60 +203,67 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── TARJETA: RECETA DEL DÍA (datos reales de la API) ─────────────
-  Widget _buildRecetaDelDia() {
-    if (_recetaDia == null) return const SizedBox.shrink();
+  // ── RECETA DEL DÍA ────────────────────────────────────────────────
+  Widget _buildRecetaDelDia(HomeController ctrl) {
+    // Obx granular: solo reconstruye esta sección cuando recetaDia o cargandoReceta cambien
+    return Obx(() {
+      final receta = ctrl.recetaDia.value;
+      if (receta == null) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Receta del día',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Receta del día',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333))),
+              IconButton(
+                onPressed: ctrl.cargandoReceta.value
+                    ? null
+                    : ctrl.recargarRecetaDia,
+                icon: ctrl.cargandoReceta.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.primary),
+                      )
+                    : const Icon(Icons.refresh, color: AppColors.primary),
+                tooltip: 'Nueva receta aleatoria',
               ),
-            ),
-            // Botón de recarga: ahora llama a la API real
-            IconButton(
-              onPressed: _cargandoReceta ? null : _recargarRecetaDia,
-              icon: _cargandoReceta
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  : const Icon(Icons.refresh, color: AppColors.primary),
-              tooltip: 'Nueva receta aleatoria',
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // AnimatedSwitcher anima la transición entre recetas
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: _buildTarjetaReceta(
-            // ValueKey hace que AnimatedSwitcher detecte el cambio de receta
-            key: ValueKey(_recetaDia!.idMeal),
-            receta: _recetaDia!,
+            ],
           ),
-        ),
-      ],
-    );
+          const SizedBox(height: 12),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            child: _buildTarjetaReceta(
+              key: ValueKey(receta.idMeal),
+              imagenUrl: receta.strMealThumb,
+              nombre: receta.strMeal,
+              subtitulo: '${receta.strCategory} · ${receta.strArea}',
+              opacidad: ctrl.cargandoReceta.value ? 0.4 : 1.0,
+            ),
+          ),
+        ],
+      );
+    });
   }
 
-  // ── TARJETA VISUAL DE RECETA ──────────────────────────────────────
-  Widget _buildTarjetaReceta({required Key key, required RecipeModel receta}) {
+  // ── TARJETA DE RECETA DEL DÍA ─────────────────────────────────────
+  Widget _buildTarjetaReceta({
+    required Key key,
+    required String imagenUrl,
+    required String nombre,
+    required String subtitulo,
+    required double opacidad,
+  }) {
     return AnimatedOpacity(
       key: key,
-      opacity: _cargandoReceta ? 0.4 : 1.0,
+      opacity: opacidad,
       duration: const Duration(milliseconds: 300),
       child: Container(
         width: double.infinity,
@@ -374,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Positioned.fill(
                 child: Image.network(
-                  receta.strMealThumb,
+                  imagenUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stack) => Container(
                     color: const Color(0xFFFFCBA4),
@@ -400,27 +311,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Nombre REAL de la API
-                      Text(
-                        receta.strMeal,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      Text(nombre,
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           const Icon(Icons.category,
                               size: 14, color: Colors.white70),
                           const SizedBox(width: 4),
-                          // Categoría y área REALES de la API
-                          Text(
-                            '${receta.strCategory} · ${receta.strArea}',
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.white70),
-                          ),
+                          Text(subtitulo,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.white70)),
                         ],
                       ),
                     ],
@@ -434,25 +338,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── LISTA HORIZONTAL DE CATEGORÍAS (imágenes reales de la API) ───
-  Widget _buildCategorias() {
-    if (_categorias.isEmpty) return const SizedBox.shrink();
+  // ── CATEGORÍAS ────────────────────────────────────────────────────
+  Widget _buildCategorias(HomeController ctrl) {
+    // Obx granular: solo reconstruye la lista de categorías
+    return Obx(() {
+      if (ctrl.categorias.isEmpty) return const SizedBox.shrink();
 
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        // Mostramos las primeras 8 categorías
-        itemCount: _categorias.length > 8 ? 8 : _categorias.length,
-        itemBuilder: (context, index) {
-          return _buildCategoriaChip(_categorias[index]);
-        },
-      ),
-    );
+      return SizedBox(
+        height: 100,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: ctrl.categorias.length > 8 ? 8 : ctrl.categorias.length,
+          itemBuilder: (context, index) =>
+              _buildCategoriaChip(ctrl.categorias[index]),
+        ),
+      );
+    });
   }
 
-  // ── CHIP DE CATEGORÍA CON IMAGEN REAL ────────────────────────────
+  // ── CHIP DE CATEGORÍA ─────────────────────────────────────────────
   Widget _buildCategoriaChip(CategoryModel categoria) {
     return Container(
       margin: const EdgeInsets.only(right: 12),
@@ -472,7 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Imagen real de la categoría desde la API
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.network(
@@ -480,32 +384,22 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 44,
               height: 44,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => const Icon(
-                Icons.restaurant,
-                color: AppColors.primary,
-                size: 28,
-              ),
+              errorBuilder: (context, error, stack) =>
+                  const Icon(Icons.restaurant, color: AppColors.primary, size: 28),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             categoria.strCategory,
             style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF555555),
-            ),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF555555)),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
-  }
-
-  // ── GRID DE RECETAS POPULARES (datos reales de la API) ───────────
-  Widget _buildRecetasPopulares() {
-    if (_recetasPopulares.isEmpty) return const SizedBox.shrink();
-    return RecipeGrid(recetas: _recetasPopulares, shrinkWrap: true);
   }
 }

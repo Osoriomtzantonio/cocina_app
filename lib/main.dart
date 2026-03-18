@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'screens/main_screen.dart';   // Pantalla contenedora principal
-import 'theme/app_theme.dart';       // Tema centralizado de la app
+import 'package:get/get.dart';          // Clase 11: GetX
+import 'screens/main_screen.dart';
+import 'theme/app_theme.dart';
 
-// Punto de entrada de la aplicación
 void main() {
   runApp(const CocinaApp());
 }
 
-// Widget raíz de la aplicación
 class CocinaApp extends StatelessWidget {
   const CocinaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    // GetMaterialApp es un reemplazo directo de MaterialApp
+    // Habilita navegación, snackbars y diálogos de GetX sin necesidad de context
+    return GetMaterialApp(
       title: 'CocinaApp',
       debugShowCheckedModeBanner: false,
-      // Usamos el tema centralizado definido en app_theme.dart
       theme: AppTheme.theme,
       home: const MainScreen(),
     );
