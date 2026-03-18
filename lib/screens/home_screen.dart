@@ -1,42 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
+import '../models/recipe_model.dart';
 import '../models/category_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/recipe_grid.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 11 — HomeScreen con GetX
+// CLASE 11 — HomeScreen con GetX (un solo Obx)
 // ══════════════════════════════════════════════════════════════
 //
-// Cambio respecto a Clase 09:
-//   Antes: StatefulWidget con _cargando, _error, _recetaDia, _categorias...
-//   Ahora: StatelessWidget — CERO variables de estado aquí
+// REGLA IMPORTANTE de GetX:
+//   No anides Obx() dentro de otro Obx().
+//   Usa UN solo Obx que lea todos los observables que necesitas.
 //
-// Todo el estado vive en HomeController.
-// La UI solo usa Obx() para reaccionar a los cambios.
+//   ❌ MAL — Obx anidados causan el error "improper use of GetX"
+//     Obx(() => Column(children: [ Obx(() => ...), Obx(() => ...) ]))
 //
-// Get.put(HomeController()) registra el controlador la primera vez
-// y lo devuelve si ya existe (no crea duplicados).
+//   ✅ BIEN — Un Obx lee todo, pasa valores ya resueltos a los métodos
+//     Obx(() {
+//       final dato1 = ctrl.obs1.value;  // leemos aquí
+//       final dato2 = ctrl.obs2.value;  // leemos aquí
+//       return _buildVista(dato1, dato2); // pasamos valores, no observables
+//     })
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Registramos (o recuperamos) el controlador
     final ctrl = Get.put(HomeController());
 
-    // Obx escucha TODOS los .obs que se usen dentro del closure
-    // y reconstruye el widget cuando alguno cambia
+    // UN SOLO Obx — lee todos los observables en este bloque
+    // Cuando cualquier observable cambie, este Obx reconstruye la pantalla
     return Obx(() {
-      if (ctrl.cargando.value) return _buildCargando();
-      if (ctrl.error.value != null) return _buildError(ctrl);
-      return _buildContenido(ctrl);
+      // ── Leemos TODOS los observables aquí ──────────────────────
+      final cargando      = ctrl.cargando.value;
+      final error         = ctrl.error.value;
+      final receta        = ctrl.recetaDia.value;
+      final categorias    = ctrl.categorias.toList();   // RxList → List normal
+      final populares     = ctrl.populares.toList();
+      final cargandoRec   = ctrl.cargandoReceta.value;
+
+      // ── Estados ─────────────────────────────────────────────────
+      if (cargando) return _buildCargando();
+      if (error != null) return _buildError(error, ctrl.cargarDatos);
+
+      // ── Contenido: pasamos valores ya resueltos (no observables) ─
+      return _buildContenido(
+        ctrl:           ctrl,
+        receta:         receta,
+        categorias:     categorias,
+        populares:      populares,
+        cargandoReceta: cargandoRec,
+      );
     });
   }
 
-  // ── PANTALLA DE CARGA ─────────────────────────────────────────────
+  // ── CARGANDO ──────────────────────────────────────────────────────
   Widget _buildCargando() {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -55,8 +76,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── PANTALLA DE ERROR ─────────────────────────────────────────────
-  Widget _buildError(HomeController ctrl) {
+  // ── ERROR ─────────────────────────────────────────────────────────
+  Widget _buildError(String mensaje, VoidCallback onReintentar) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
@@ -67,12 +88,11 @@ class HomeScreen extends StatelessWidget {
             children: [
               const Icon(Icons.wifi_off, size: 72, color: AppColors.primary),
               const SizedBox(height: 16),
-              Text(ctrl.error.value!,
+              Text(mensaje,
                   style: AppTextStyles.heading3, textAlign: TextAlign.center),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                // ctrl.cargarDatos() es un Future — GetX no necesita setState
-                onPressed: ctrl.cargarDatos,
+                onPressed: onReintentar,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reintentar'),
                 style: ElevatedButton.styleFrom(
@@ -88,7 +108,14 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── CONTENIDO PRINCIPAL ───────────────────────────────────────────
-  Widget _buildContenido(HomeController ctrl) {
+  // Recibe valores ya resueltos — no lee observables directamente
+  Widget _buildContenido({
+    required HomeController ctrl,
+    required RecipeModel? receta,
+    required List<CategoryModel> categorias,
+    required List<RecipeModel> populares,
+    required bool cargandoReceta,
+  }) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
@@ -101,10 +128,15 @@ class HomeScreen extends StatelessWidget {
             children: [
               _buildHeader(),
 
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildRecetaDelDia(ctrl),
-              ),
+              if (receta != null)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildRecetaDelDia(
+                    ctrl:           ctrl,
+                    receta:         receta,
+                    cargandoReceta: cargandoReceta,
+                  ),
+                ),
 
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -115,7 +147,7 @@ class HomeScreen extends StatelessWidget {
                         color: Color(0xFF333333))),
               ),
               const SizedBox(height: 12),
-              _buildCategorias(ctrl),
+              _buildCategorias(categorias),
 
               const SizedBox(height: 20),
 
@@ -138,8 +170,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              // Obx granular: solo reconstruye este grid cuando populares cambie
-              Obx(() => RecipeGrid(recetas: ctrl.populares, shrinkWrap: true)),
+              RecipeGrid(recetas: populares, shrinkWrap: true),
               const SizedBox(height: 24),
             ],
           ),
@@ -204,56 +235,51 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── RECETA DEL DÍA ────────────────────────────────────────────────
-  Widget _buildRecetaDelDia(HomeController ctrl) {
-    // Obx granular: solo reconstruye esta sección cuando recetaDia o cargandoReceta cambien
-    return Obx(() {
-      final receta = ctrl.recetaDia.value;
-      if (receta == null) return const SizedBox.shrink();
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Receta del día',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333))),
-              IconButton(
-                onPressed: ctrl.cargandoReceta.value
-                    ? null
-                    : ctrl.recargarRecetaDia,
-                icon: ctrl.cargandoReceta.value
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.primary),
-                      )
-                    : const Icon(Icons.refresh, color: AppColors.primary),
-                tooltip: 'Nueva receta aleatoria',
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            child: _buildTarjetaReceta(
-              key: ValueKey(receta.idMeal),
-              imagenUrl: receta.strMealThumb,
-              nombre: receta.strMeal,
-              subtitulo: '${receta.strCategory} · ${receta.strArea}',
-              opacidad: ctrl.cargandoReceta.value ? 0.4 : 1.0,
+  Widget _buildRecetaDelDia({
+    required HomeController ctrl,
+    required RecipeModel receta,
+    required bool cargandoReceta,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Receta del día',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333))),
+            IconButton(
+              onPressed: cargandoReceta ? null : ctrl.recargarRecetaDia,
+              icon: cargandoReceta
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.primary),
+                    )
+                  : const Icon(Icons.refresh, color: AppColors.primary),
+              tooltip: 'Nueva receta aleatoria',
             ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: _buildTarjetaReceta(
+            key: ValueKey(receta.idMeal),
+            imagenUrl: receta.strMealThumb,
+            nombre:    receta.strMeal,
+            subtitulo: '${receta.strCategory} · ${receta.strArea}',
+            opacidad:  cargandoReceta ? 0.4 : 1.0,
           ),
-        ],
-      );
-    });
+        ),
+      ],
+    );
   }
 
-  // ── TARJETA DE RECETA DEL DÍA ─────────────────────────────────────
+  // ── TARJETA RECETA DEL DÍA ────────────────────────────────────────
   Widget _buildTarjetaReceta({
     required Key key,
     required String imagenUrl,
@@ -317,16 +343,13 @@ class HomeScreen extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               color: Colors.white)),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.category,
-                              size: 14, color: Colors.white70),
-                          const SizedBox(width: 4),
-                          Text(subtitulo,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.white70)),
-                        ],
-                      ),
+                      Row(children: [
+                        const Icon(Icons.category, size: 14, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Text(subtitulo,
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.white70)),
+                      ]),
                     ],
                   ),
                 ),
@@ -339,22 +362,18 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── CATEGORÍAS ────────────────────────────────────────────────────
-  Widget _buildCategorias(HomeController ctrl) {
-    // Obx granular: solo reconstruye la lista de categorías
-    return Obx(() {
-      if (ctrl.categorias.isEmpty) return const SizedBox.shrink();
+  Widget _buildCategorias(List<CategoryModel> categorias) {
+    if (categorias.isEmpty) return const SizedBox.shrink();
 
-      return SizedBox(
-        height: 100,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: ctrl.categorias.length > 8 ? 8 : ctrl.categorias.length,
-          itemBuilder: (context, index) =>
-              _buildCategoriaChip(ctrl.categorias[index]),
-        ),
-      );
-    });
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: categorias.length > 8 ? 8 : categorias.length,
+        itemBuilder: (context, index) => _buildCategoriaChip(categorias[index]),
+      ),
+    );
   }
 
   // ── CHIP DE CATEGORÍA ─────────────────────────────────────────────
@@ -384,8 +403,8 @@ class HomeScreen extends StatelessWidget {
               width: 44,
               height: 44,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) =>
-                  const Icon(Icons.restaurant, color: AppColors.primary, size: 28),
+              errorBuilder: (context, error, stack) => const Icon(
+                  Icons.restaurant, color: AppColors.primary, size: 28),
             ),
           ),
           const SizedBox(height: 6),
