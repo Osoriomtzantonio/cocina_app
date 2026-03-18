@@ -121,6 +121,26 @@ class ApiService {
     }
   }
 
+  // ── TODAS LAS RECETAS (para "populares" en HomeScreen) ───────────
+  Future<List<RecipeModel>> obtenerRecetas({int limite = 20}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/recetas?limite=$limite'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (data['meals'] == null) return [];
+        final meals = data['meals'] as List<dynamic>;
+        return meals
+            .map((json) => RecipeModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   // ── DETALLE COMPLETO DE UNA RECETA ───────────────────────────────
   // Obtiene todos los campos: ingredientes, instrucciones, etc.
   // Se usa desde RecipeDetailScreen y como complemento de filtros.

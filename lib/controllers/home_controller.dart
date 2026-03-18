@@ -46,7 +46,7 @@ class HomeController extends GetxController {
     final resultados = await Future.wait([
       _api.obtenerRecetaAleatoria(),
       _api.obtenerCategorias(),
-      _api.buscarRecetas('chicken'),
+      _api.obtenerRecetas(limite: 6),   // recetas de nuestro backend
     ]);
 
     final receta   = resultados[0] as RecipeModel?;
