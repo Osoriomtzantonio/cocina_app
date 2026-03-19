@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
 import '../screens/category_screen.dart';
+import '../screens/login_screen.dart';
 
 // Menú lateral de navegación con categorías
 class CustomDrawer extends StatelessWidget {
@@ -32,12 +35,11 @@ class CustomDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      // Color de fondo del drawer
       backgroundColor: Colors.white,
       child: Column(
         children: [
           // ── ENCABEZADO DEL DRAWER ────────────────────────────
-          _buildHeader(),
+          _buildHeader(context),
 
           // ── SECCIÓN: NAVEGACIÓN PRINCIPAL ────────────────────
           _buildNavPrincipal(context),
@@ -80,54 +82,104 @@ class CustomDrawer extends StatelessWidget {
               },
             ),
           ),
+
+          // ── BOTÓN DE SESIÓN ───────────────────────────────────
+          _buildBotonSesion(context),
         ],
       ),
     );
   }
 
-  // ── ENCABEZADO: logo y nombre de la app ──────────────────────────
-  Widget _buildHeader() {
-    return DrawerHeader(
-      // DrawerHeader ocupa el área superior del Drawer
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  // ── ENCABEZADO: logo o datos del usuario ─────────────────────────
+  // ══════════════════════════════════════════════════════════════════
+  // CLASE 13 — Drawer reactivo con Obx
+  // ══════════════════════════════════════════════════════════════════
+  //
+  // Obx() permite que el DrawerHeader reaccione automáticamente
+  // cuando el usuario inicia o cierra sesión, sin reconstruir
+  // toda la pantalla.
+  //
+  // Si está logueado  → muestra avatar con inicial + nombre + email
+  // Si no está logueado → muestra ícono de app + botón "Iniciar sesión"
+  Widget _buildHeader(BuildContext context) {
+    final authCtrl = Get.find<AuthController>();
+
+    return Obx(() {
+      final logueado = authCtrl.estaLogueado.value;
+      final nombre   = authCtrl.nombreUsuario.value;
+      final email    = authCtrl.emailUsuario.value;
+
+      return DrawerHeader(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary, AppColors.primaryDark],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Ícono de la app
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.restaurant_menu,
-                color: Colors.white, size: 32),
-          ),
-          const SizedBox(height: 12),
-          // Nombre
-          const Text(
-            'CocinaApp',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          // Subtítulo
-          const Text(
-            'Recetario Inteligente',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-        ],
-      ),
-    );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (logueado) ...[
+              // ── USUARIO LOGUEADO: avatar con inicial ────────────
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.white.withValues(alpha: 0.3),
+                child: Text(
+                  // Primera letra del nombre en mayúscula
+                  nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                nombre,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                email,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ] else ...[
+              // ── SIN SESIÓN: ícono de app ─────────────────────────
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.restaurant_menu,
+                    color: Colors.white, size: 32),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'CocinaApp',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Text(
+                'Recetario Inteligente',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 
   // ── NAVEGACIÓN PRINCIPAL: Inicio, Buscar, Favoritos ──────────────
@@ -172,6 +224,77 @@ class CustomDrawer extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+
+  // ── BOTÓN DE SESIÓN (parte inferior del drawer) ──────────────────
+  // Si el usuario está logueado → botón "Cerrar sesión"
+  // Si no está logueado → botón "Iniciar sesión"
+  Widget _buildBotonSesion(BuildContext context) {
+    final authCtrl = Get.find<AuthController>();
+
+    return Obx(() {
+      final logueado = authCtrl.estaLogueado.value;
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        child: Column(
+          children: [
+            const Divider(color: AppColors.grey200),
+            const SizedBox(height: 4),
+            ListTile(
+              leading: Icon(
+                logueado ? Icons.logout : Icons.login,
+                color: logueado ? Colors.red.shade400 : AppColors.primary,
+              ),
+              title: Text(
+                logueado ? 'Cerrar sesión' : 'Iniciar sesión',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: logueado ? Colors.red.shade400 : AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: EdgeInsets.zero,
+              onTap: () {
+                Navigator.pop(context); // cierra el drawer
+
+                if (logueado) {
+                  // Confirmación antes de cerrar sesión
+                  Get.dialog(
+                    AlertDialog(
+                      title: const Text('Cerrar sesión'),
+                      content: const Text(
+                          '¿Estás seguro de que quieres cerrar sesión?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Get.back(),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Get.back(); // cierra el diálogo
+                            authCtrl.cerrarSesion();
+                          },
+                          child: Text(
+                            'Cerrar sesión',
+                            style: TextStyle(color: Colors.red.shade400),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  // Navega a la pantalla de login
+                  Get.to(() => const LoginScreen());
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   // ── ÍTEM DE CATEGORÍA ────────────────────────────────────────────

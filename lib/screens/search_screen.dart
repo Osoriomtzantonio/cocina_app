@@ -23,7 +23,8 @@ class SearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = Get.put(BusquedaController());
+    // find<T>() busca la instancia registrada por BusquedaBinding
+    final ctrl = Get.find<BusquedaController>();
 
     return Scaffold(
       backgroundColor: AppColors.background,

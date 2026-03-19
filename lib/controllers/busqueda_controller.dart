@@ -1,25 +1,21 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../models/recipe_model.dart';
-import '../services/api_service.dart';
+import '../repositories/recetas_repository.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 11 — BusquedaController con GetX
+// CLASE 12 — BusquedaController actualizado con Repository
 // ══════════════════════════════════════════════════════════════
 //
-// Antes (SearchScreen era StatefulWidget):
-//   Timer? _debounce;
-//   String _query = '';
-//   bool _cargando = false;
-//   List<RecipeModel> _resultados = [];
-//   void _onSearchChanged(String q) { setState(...) }
+// Cambio respecto a Clase 11:
+//   Antes: final _api = ApiService();
+//   Ahora: Get.find<RecetasRepository>()
 //
-// Ahora (SearchScreen será StatelessWidget):
-//   Todo el estado y la lógica vive aquí.
-//   La pantalla solo usa Obx() para reaccionar a los cambios.
+// El controller sigue funcionando igual desde la perspectiva de la UI.
+// Solo cambia cómo obtiene los datos internamente.
 
 class BusquedaController extends GetxController {
-  final _api = ApiService();
+  final _repo = Get.find<RecetasRepository>();
 
   // ── OBSERVABLES ───────────────────────────────────────────────────
   final query          = ''.obs;
@@ -52,7 +48,7 @@ class BusquedaController extends GetxController {
   Future<void> buscar(String q) async {
     cargando.value = true;
 
-    final r = await _api.buscarRecetas(q);
+    final r = await _repo.buscar(q);
 
     // assignAll notifica a todos los Obx() que usen resultados
     resultados.assignAll(r);

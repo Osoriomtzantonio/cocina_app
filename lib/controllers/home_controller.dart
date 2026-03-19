@@ -1,24 +1,28 @@
 import 'package:get/get.dart';
 import '../models/recipe_model.dart';
 import '../models/category_model.dart';
-import '../services/api_service.dart';
+import '../repositories/recetas_repository.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 11 — HomeController con GetX
+// CLASE 12 — HomeController actualizado con Repository
 // ══════════════════════════════════════════════════════════════
 //
-// GetxController separa la LÓGICA de la UI:
-//   HomeController → todo el estado y las llamadas a la API
-//   HomeScreen     → solo construye widgets, sin lógica
+// Cambio respecto a Clase 11:
+//   Antes: final _api = ApiService();  ← dependencia concreta
+//   Ahora: Get.find<RecetasRepository>() ← dependencia abstracta
 //
-// Equivalencias con el patrón anterior:
-//   initState()             → onInit()
-//   dispose()               → onClose()
-//   setState(() => x = y)  → x.value = y
-//   if (_cargando) ...      → Obx(() => ctrl.cargando.value ? ... : ...)
+// Beneficio: el controller no sabe si los datos vienen de la red,
+// de una base de datos local o de un mock para pruebas.
+// Esa decisión la toma AppBinding (registrado en main.dart).
+//
+// Flujo de dependencias:
+//   main.dart → AppBinding → RecetasDatasource (implementa RecetasRepository)
+//   HomeController → Get.find<RecetasRepository>() → usa lo que AppBinding registró
 
 class HomeController extends GetxController {
-  final _api = ApiService();
+  // Get.find busca la instancia ya registrada por AppBinding
+  // Si no existe lanza un error (eso es útil: falla rápido y claro)
+  final _repo = Get.find<RecetasRepository>();
 
   // ── OBSERVABLES ───────────────────────────────────────────────────
   // .obs convierte la variable en "reactiva":
@@ -44,9 +48,9 @@ class HomeController extends GetxController {
     error.value    = null;
 
     final resultados = await Future.wait([
-      _api.obtenerRecetaAleatoria(),
-      _api.obtenerCategorias(),
-      _api.obtenerRecetas(limite: 6),   // recetas de nuestro backend
+      _repo.obtenerAleatoria(),
+      _repo.obtenerCategorias(),
+      _repo.obtenerTodas(limite: 6),    // recetas de nuestro backend
     ]);
 
     final receta   = resultados[0] as RecipeModel?;
@@ -69,7 +73,7 @@ class HomeController extends GetxController {
   // ── RECARGAR RECETA DEL DÍA ───────────────────────────────────────
   Future<void> recargarRecetaDia() async {
     cargandoReceta.value = true;
-    final nueva = await _api.obtenerRecetaAleatoria();
+    final nueva = await _repo.obtenerAleatoria();
     if (nueva != null) recetaDia.value = nueva;
     cargandoReceta.value = false;
   }

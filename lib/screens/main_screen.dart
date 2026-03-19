@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../bindings/home_binding.dart';     // Clase 12
+import '../bindings/busqueda_binding.dart'; // Clase 12
 import '../theme/app_theme.dart';
 import '../widgets/custom_drawer.dart';
 import 'home_screen.dart';
@@ -17,6 +19,17 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   // Índice de la tab seleccionada (0=Inicio, 1=Buscar, 2=Favoritas)
   int _tabActiva = 0;
+
+  // ── CLASE 12: registrar controllers por pantalla ────────────────
+  // initState se ejecuta una sola vez cuando MainScreen se crea.
+  // Llamamos a los bindings aquí para que los controllers estén
+  // disponibles antes de que las pantallas los soliciten con Get.find().
+  @override
+  void initState() {
+    super.initState();
+    HomeBinding().dependencies();     // registra HomeController
+    BusquedaBinding().dependencies(); // registra BusquedaController
+  }
 
   // Lista de pantallas que corresponden a cada tab
   // Se crean una sola vez y se mantienen en memoria al cambiar de tab

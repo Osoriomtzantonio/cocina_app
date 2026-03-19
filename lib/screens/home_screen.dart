@@ -7,29 +7,28 @@ import '../theme/app_theme.dart';
 import '../widgets/recipe_grid.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 11 — HomeScreen con GetX (un solo Obx)
+// CLASE 12 — HomeScreen: Get.find en lugar de Get.put
 // ══════════════════════════════════════════════════════════════
 //
-// REGLA IMPORTANTE de GetX:
+// Clase 11 usaba Get.put(HomeController()) — creaba la instancia aquí.
+// Clase 12 usa Get.find<HomeController>()  — busca la instancia ya
+// registrada por HomeBinding (que se llamó desde MainScreen.initState).
+//
+// ¿Por qué importa esto?
+//   Get.put() en build() puede crear instancias duplicadas si
+//   el widget se reconstruye. Get.find() siempre reutiliza la misma.
+//
+// REGLA IMPORTANTE de GetX (sigue vigente):
 //   No anides Obx() dentro de otro Obx().
 //   Usa UN solo Obx que lea todos los observables que necesitas.
-//
-//   ❌ MAL — Obx anidados causan el error "improper use of GetX"
-//     Obx(() => Column(children: [ Obx(() => ...), Obx(() => ...) ]))
-//
-//   ✅ BIEN — Un Obx lee todo, pasa valores ya resueltos a los métodos
-//     Obx(() {
-//       final dato1 = ctrl.obs1.value;  // leemos aquí
-//       final dato2 = ctrl.obs2.value;  // leemos aquí
-//       return _buildVista(dato1, dato2); // pasamos valores, no observables
-//     })
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = Get.put(HomeController());
+    // find<T>() busca la instancia registrada por HomeBinding
+    final ctrl = Get.find<HomeController>();
 
     // UN SOLO Obx — lee todos los observables en este bloque
     // Cuando cualquier observable cambie, este Obx reconstruye la pantalla
