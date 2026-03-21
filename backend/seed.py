@@ -62,7 +62,7 @@ recetas = [
         nombre        = "Tacos al Pastor",
         categoria     = "Pollo",
         area          = "Mexicano",
-        imagen_url    = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Tacos_al_pastor.jpg/640px-Tacos_al_pastor.jpg",
+        imagen_url    = "",
         instrucciones = (
             "Marinar el pollo con chile guajillo, achiote, naranja y especias por 2 horas.\n"
             "Cocinar el pollo en trompo o sartén a fuego medio-alto.\n"
@@ -84,7 +84,7 @@ recetas = [
         nombre        = "Guacamole Tradicional",
         categoria     = "Vegetariano",
         area          = "Mexicano",
-        imagen_url    = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Guacamole.jpg/640px-Guacamole.jpg",
+        imagen_url    = "",
         instrucciones = (
             "Partir los aguacates por la mitad y retirar el hueso.\n"
             "Extraer la pulpa y machacar con un tenedor hasta obtener la textura deseada.\n"
@@ -105,7 +105,7 @@ recetas = [
         nombre        = "Pozole Rojo",
         categoria     = "Sopas",
         area          = "Mexicano",
-        imagen_url    = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Pozole_rojo.jpg/640px-Pozole_rojo.jpg",
+        imagen_url    = "",
         instrucciones = (
             "Cocer el maíz pozolero previamente remojado por 2 horas.\n"
             "Cocinar la carne de cerdo con ajo, cebolla y sal hasta que esté suave.\n"
@@ -129,7 +129,7 @@ recetas = [
         nombre        = "Enchiladas Rojas",
         categoria     = "Pollo",
         area          = "Mexicano",
-        imagen_url    = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Enchiladas_rojas.jpg/640px-Enchiladas_rojas.jpg",
+        imagen_url    = "",
         instrucciones = (
             "Remojar los chiles guajillo y mulato, quitar semillas y licuar con ajo.\n"
             "Freír la salsa en aceite caliente por 5 minutos.\n"
@@ -152,7 +152,7 @@ recetas = [
         nombre        = "Caldo de Camarón",
         categoria     = "Mariscos",
         area          = "Mexicano",
-        imagen_url    = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Caldo_de_camaron.jpg/640px-Caldo_de_camaron.jpg",
+        imagen_url    = "",
         instrucciones = (
             "Hervir los camarones con cebolla y ajo para hacer el caldo base.\n"
             "Licuar jitomate, chile guajillo, cebolla y ajo.\n"
@@ -175,7 +175,7 @@ recetas = [
         nombre        = "Churros con Chocolate",
         categoria     = "Postres",
         area          = "Mexicano",
-        imagen_url    = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Churros_con_chocolate.jpg/640px-Churros_con_chocolate.jpg",
+        imagen_url    = "",
         instrucciones = (
             "Hervir el agua con sal y mantequilla.\n"
             "Agregar la harina de golpe y revolver hasta formar una masa.\n"
@@ -193,6 +193,318 @@ recetas = [
         ingrediente7="Canela",        medida7="1 cucharada",
         ingrediente8="Chocolate",     medida8="200 g",
         ingrediente9="Leche",         medida9="1/2 taza",
+    ),
+
+    # ── POLLO ─────────────────────────────────────────────────────────
+    models.Receta(
+        nombre        = "Pollo en Mole",
+        categoria     = "Pollo",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Cocer el pollo con cebolla, ajo y sal hasta que esté tierno.\n"
+            "Tostar los chiles mulato, ancho y pasilla en el comal.\n"
+            "Licuar los chiles con jitomate, ajo, cebolla, chocolate, almendras y especias.\n"
+            "Freír la salsa en aceite caliente por 10 minutos moviendo constantemente.\n"
+            "Agregar caldo de pollo y cocinar a fuego bajo por 30 minutos.\n"
+            "Incorporar el pollo cocido y dejar hervir 10 minutos más.\n"
+            "Servir con arroz blanco y tortillas de maíz."
+        ),
+        ingrediente1="Pollo",          medida1="1 pieza entera",
+        ingrediente2="Chile mulato",   medida2="3 piezas",
+        ingrediente3="Chile ancho",    medida3="3 piezas",
+        ingrediente4="Chile pasilla",  medida4="2 piezas",
+        ingrediente5="Chocolate",      medida5="50 g",
+        ingrediente6="Jitomate",       medida6="2 piezas",
+        ingrediente7="Almendras",      medida7="50 g",
+        ingrediente8="Ajonjolí",       medida8="2 cucharadas",
+        ingrediente9="Canela",         medida9="1 raja",
+        ingrediente10="Tortillas",     medida10="al gusto",
+    ),
+    models.Receta(
+        nombre        = "Caldo de Pollo",
+        categoria     = "Pollo",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Colocar el pollo en una olla con agua fría y llevar a ebullición.\n"
+            "Retirar la espuma que sube a la superficie.\n"
+            "Agregar cebolla, ajo, zanahoria, apio y sal.\n"
+            "Cocinar a fuego medio por 45 minutos.\n"
+            "Añadir calabacita, elote y chile en rama.\n"
+            "Cocinar 15 minutos más hasta que las verduras estén suaves.\n"
+            "Servir caliente con limón, chile y cilantro al gusto."
+        ),
+        ingrediente1="Pollo",          medida1="1 kg (piezas)",
+        ingrediente2="Zanahoria",      medida2="2 piezas",
+        ingrediente3="Calabacita",     medida3="2 piezas",
+        ingrediente4="Elote",          medida4="1 pieza",
+        ingrediente5="Cebolla",        medida5="1/2 pieza",
+        ingrediente6="Ajo",            medida6="3 dientes",
+        ingrediente7="Apio",           medida7="2 ramas",
+        ingrediente8="Chile en rama",  medida8="1 pieza",
+        ingrediente9="Cilantro",       medida9="al gusto",
+        ingrediente10="Limón",         medida10="al gusto",
+    ),
+
+    # ── RES ───────────────────────────────────────────────────────────
+    models.Receta(
+        nombre        = "Birria de Res",
+        categoria     = "Res",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Remojar los chiles guajillo, ancho y de árbol en agua caliente por 20 minutos.\n"
+            "Licuar los chiles con ajo, cebolla, jitomate, comino, orégano y vinagre.\n"
+            "Marinar la carne con la salsa y dejar reposar 2 horas en el refrigerador.\n"
+            "Cocinar tapado en olla a presión por 1 hora o en horno a 160°C por 3 horas.\n"
+            "Deshebre la carne y reservar el consomé.\n"
+            "Servir en tacos con cebolla, cilantro y limón, acompañados del consomé."
+        ),
+        ingrediente1="Carne de res",   medida1="1 kg (chambarete)",
+        ingrediente2="Chile guajillo", medida2="6 piezas",
+        ingrediente3="Chile ancho",    medida3="3 piezas",
+        ingrediente4="Chile de árbol", medida4="2 piezas",
+        ingrediente5="Ajo",            medida5="4 dientes",
+        ingrediente6="Cebolla",        medida6="1 pieza",
+        ingrediente7="Jitomate",       medida7="2 piezas",
+        ingrediente8="Comino",         medida8="1 cucharadita",
+        ingrediente9="Orégano",        medida9="1 cucharada",
+        ingrediente10="Tortillas",     medida10="al gusto",
+    ),
+    models.Receta(
+        nombre        = "Carne Asada",
+        categoria     = "Res",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Marinar la carne con jugo de limón, ajo, sal, pimienta y comino por 1 hora.\n"
+            "Calentar el asador o sartén a fuego muy alto.\n"
+            "Asar la carne 4-5 minutos por cada lado según el término deseado.\n"
+            "Dejar reposar la carne 5 minutos antes de cortar.\n"
+            "Cortar en tiras y servir con guacamole, pico de gallo y tortillas."
+        ),
+        ingrediente1="Arrachera",      medida1="1 kg",
+        ingrediente2="Limón",          medida2="4 piezas",
+        ingrediente3="Ajo",            medida3="4 dientes",
+        ingrediente4="Comino",         medida4="1 cucharadita",
+        ingrediente5="Sal",            medida5="al gusto",
+        ingrediente6="Pimienta",       medida6="al gusto",
+        ingrediente7="Cebolla",        medida7="1 pieza",
+        ingrediente8="Chile de árbol", medida8="2 piezas",
+        ingrediente9="Cilantro",       medida9="al gusto",
+        ingrediente10="Tortillas",     medida10="al gusto",
+    ),
+    models.Receta(
+        nombre        = "Milanesa de Res",
+        categoria     = "Res",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Aplanar las filetes de res con un mazo de cocina.\n"
+            "Sazonar con sal, pimienta y ajo en polvo.\n"
+            "Pasar cada filete por harina, luego por huevo batido y finalmente por pan molido.\n"
+            "Freír en aceite caliente hasta que estén doradas y crujientes.\n"
+            "Escurrir en papel absorbente.\n"
+            "Servir con ensalada, arroz y frijoles."
+        ),
+        ingrediente1="Filete de res",  medida1="4 piezas",
+        ingrediente2="Pan molido",     medida2="1 taza",
+        ingrediente3="Harina",         medida3="1/2 taza",
+        ingrediente4="Huevo",          medida4="2 piezas",
+        ingrediente5="Ajo en polvo",   medida5="1 cucharadita",
+        ingrediente6="Sal",            medida6="al gusto",
+        ingrediente7="Pimienta",       medida7="al gusto",
+        ingrediente8="Aceite",         medida8="para freír",
+        ingrediente9="Limón",          medida9="al gusto",
+    ),
+
+    # ── VEGETARIANO ───────────────────────────────────────────────────
+    models.Receta(
+        nombre        = "Chiles Rellenos",
+        categoria     = "Vegetariano",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Asar los chiles poblanos directamente en la flama hasta que la piel se queme.\n"
+            "Envolver en plástico por 10 minutos y pelar.\n"
+            "Hacer una incisión y retirar las semillas con cuidado.\n"
+            "Rellenar con queso Oaxaca o panela.\n"
+            "Pasar por harina y luego por clara de huevo batida a punto de turrón.\n"
+            "Freír en aceite caliente hasta que el capeado esté dorado.\n"
+            "Servir con salsa de jitomate caliente."
+        ),
+        ingrediente1="Chile poblano",  medida1="4 piezas",
+        ingrediente2="Queso Oaxaca",   medida2="300 g",
+        ingrediente3="Huevo",          medida3="3 piezas",
+        ingrediente4="Harina",         medida4="4 cucharadas",
+        ingrediente5="Jitomate",       medida5="3 piezas",
+        ingrediente6="Cebolla",        medida6="1/2 pieza",
+        ingrediente7="Ajo",            medida7="2 dientes",
+        ingrediente8="Aceite",         medida8="para freír",
+        ingrediente9="Sal",            medida9="al gusto",
+    ),
+    models.Receta(
+        nombre        = "Enfrijoladas",
+        categoria     = "Vegetariano",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Licuar los frijoles cocidos con ajo, cebolla y chile chipotle.\n"
+            "Calentar la salsa de frijol en una sartén con un poco de aceite.\n"
+            "Pasar las tortillas por la salsa caliente.\n"
+            "Doblar las tortillas en cuatro o enrollar.\n"
+            "Bañar con más salsa y decorar con crema, queso y cebolla morada.\n"
+            "Servir de inmediato acompañadas de aguacate."
+        ),
+        ingrediente1="Frijoles negros", medida1="2 tazas cocidos",
+        ingrediente2="Tortillas",       medida2="8 piezas",
+        ingrediente3="Chile chipotle",  medida3="1 pieza",
+        ingrediente4="Ajo",             medida4="1 diente",
+        ingrediente5="Cebolla",         medida5="1/4 pieza",
+        ingrediente6="Crema",           medida6="4 cucharadas",
+        ingrediente7="Queso fresco",    medida7="100 g",
+        ingrediente8="Aguacate",        medida8="1 pieza",
+        ingrediente9="Aceite",          medida9="2 cucharadas",
+    ),
+
+    # ── MARISCOS ──────────────────────────────────────────────────────
+    models.Receta(
+        nombre        = "Camarones a la Diabla",
+        categoria     = "Mariscos",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Limpiar y desvenar los camarones, dejar con cola.\n"
+            "Licuar chiles de árbol, guajillo, jitomate, ajo y cebolla.\n"
+            "Saltear los camarones en mantequilla con ajo por 2 minutos.\n"
+            "Agregar la salsa de chile y cocinar 5 minutos a fuego medio.\n"
+            "Sazonar con sal y pimienta al gusto.\n"
+            "Servir sobre arroz blanco con tortillas calientes."
+        ),
+        ingrediente1="Camarones",      medida1="500 g",
+        ingrediente2="Chile de árbol", medida2="5 piezas",
+        ingrediente3="Chile guajillo", medida3="3 piezas",
+        ingrediente4="Jitomate",       medida4="2 piezas",
+        ingrediente5="Ajo",            medida5="3 dientes",
+        ingrediente6="Cebolla",        medida6="1/2 pieza",
+        ingrediente7="Mantequilla",    medida7="3 cucharadas",
+        ingrediente8="Sal",            medida8="al gusto",
+        ingrediente9="Arroz",          medida9="al gusto",
+    ),
+    models.Receta(
+        nombre        = "Aguachile de Camarón",
+        categoria     = "Mariscos",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Limpiar los camarones y abrirlos en mariposa.\n"
+            "Licuar el jugo de limón con chile serrano, cilantro y sal.\n"
+            "Marinar los camarones en el aguachile por 10 minutos en el refrigerador.\n"
+            "Los camarones se 'cocerán' con el ácido del limón.\n"
+            "Servir sobre pepino rebanado y cebolla morada.\n"
+            "Decorar con aguacate y totopos."
+        ),
+        ingrediente1="Camarón crudo",  medida1="400 g",
+        ingrediente2="Limón",          medida2="8 piezas",
+        ingrediente3="Chile serrano",  medida3="2 piezas",
+        ingrediente4="Cilantro",       medida4="1/2 manojo",
+        ingrediente5="Pepino",         medida5="1 pieza",
+        ingrediente6="Cebolla morada", medida6="1/2 pieza",
+        ingrediente7="Aguacate",       medida7="1 pieza",
+        ingrediente8="Sal",            medida8="al gusto",
+        ingrediente9="Totopos",        medida9="al gusto",
+    ),
+
+    # ── SOPAS ─────────────────────────────────────────────────────────
+    models.Receta(
+        nombre        = "Sopa de Lima",
+        categoria     = "Sopas",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Cocer el pollo en caldo con cebolla, ajo y sal.\n"
+            "Retirar el pollo, deshebrarlo y reservar el caldo.\n"
+            "Sofreír jitomate, cebolla y chile dulce en aceite.\n"
+            "Agregar el caldo y llevar a hervor.\n"
+            "Exprimir las limas al caldo y agregar el jugo.\n"
+            "Servir con pollo deshebrado, tiras de tortilla frita y chile habanero al gusto."
+        ),
+        ingrediente1="Pollo",          medida1="500 g",
+        ingrediente2="Lima",           medida2="4 piezas",
+        ingrediente3="Jitomate",       medida3="2 piezas",
+        ingrediente4="Cebolla",        medida4="1 pieza",
+        ingrediente5="Chile dulce",    medida5="1 pieza",
+        ingrediente6="Ajo",            medida6="2 dientes",
+        ingrediente7="Tortillas",      medida7="4 piezas (para freír)",
+        ingrediente8="Chile habanero", medida8="al gusto",
+        ingrediente9="Cilantro",       medida9="al gusto",
+    ),
+    models.Receta(
+        nombre        = "Caldo Tlalpeño",
+        categoria     = "Sopas",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Cocer el pollo y los garbanzos juntos con ajo, cebolla y sal.\n"
+            "Asar el chile chipotle, jitomate y ajo en el comal.\n"
+            "Licuar el chipotle con jitomate y agregar al caldo.\n"
+            "Añadir epazote y dejar hervir 10 minutos.\n"
+            "Servir con aguacate en cubos y limón al gusto."
+        ),
+        ingrediente1="Pollo",          medida1="500 g",
+        ingrediente2="Garbanzo",       medida2="1 taza (cocido)",
+        ingrediente3="Chile chipotle", medida3="2 piezas",
+        ingrediente4="Jitomate",       medida4="2 piezas",
+        ingrediente5="Epazote",        medida5="3 ramas",
+        ingrediente6="Cebolla",        medida6="1/2 pieza",
+        ingrediente7="Ajo",            medida7="2 dientes",
+        ingrediente8="Aguacate",       medida8="1 pieza",
+        ingrediente9="Limón",          medida9="al gusto",
+    ),
+
+    # ── POSTRES ───────────────────────────────────────────────────────
+    models.Receta(
+        nombre        = "Flan Napolitano",
+        categoria     = "Postres",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Preparar el caramelo: derretir el azúcar en una sartén sin mover hasta que tome color dorado.\n"
+            "Verter el caramelo en el molde y distribuir bien.\n"
+            "Licuar la leche condensada, leche evaporada, huevos y queso crema.\n"
+            "Verter la mezcla sobre el caramelo en el molde.\n"
+            "Hornear a baño maría a 180°C por 50-60 minutos.\n"
+            "Dejar enfriar completamente antes de desmoldar.\n"
+            "Refrigerar mínimo 2 horas antes de servir."
+        ),
+        ingrediente1="Leche condensada",  medida1="1 lata (397 g)",
+        ingrediente2="Leche evaporada",   medida2="1 lata (360 ml)",
+        ingrediente3="Huevo",             medida3="4 piezas",
+        ingrediente4="Queso crema",       medida4="190 g",
+        ingrediente5="Azúcar",            medida5="1 taza (para caramelo)",
+        ingrediente6="Vainilla",          medida6="1 cucharadita",
+    ),
+    models.Receta(
+        nombre        = "Arroz con Leche",
+        categoria     = "Postres",
+        area          = "Mexicano",
+        imagen_url    = "",
+        instrucciones = (
+            "Cocer el arroz en agua con canela y cáscara de limón por 15 minutos.\n"
+            "Agregar la leche entera y la leche condensada.\n"
+            "Cocinar a fuego bajo moviendo constantemente para evitar que se pegue.\n"
+            "Cocinar hasta que el arroz esté cremoso y la leche se haya absorbido.\n"
+            "Retirar del fuego y agregar la vainilla.\n"
+            "Servir frío o caliente espolvoreado con canela en polvo."
+        ),
+        ingrediente1="Arroz",             medida1="1 taza",
+        ingrediente2="Leche entera",      medida2="1 litro",
+        ingrediente3="Leche condensada",  medida3="1/2 lata",
+        ingrediente4="Canela",            medida4="2 rajas",
+        ingrediente5="Cáscara de limón",  medida5="1 tira",
+        ingrediente6="Vainilla",          medida6="1 cucharadita",
+        ingrediente7="Canela en polvo",   medida7="para decorar",
     ),
 ]
 

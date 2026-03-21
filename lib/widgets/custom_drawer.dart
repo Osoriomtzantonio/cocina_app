@@ -18,18 +18,14 @@ class CustomDrawer extends StatelessWidget {
     required this.onTabSeleccionada,
   });
 
-  // Categorías con su ícono emoji (datos reales vendrán de la API en Clase 09)
+  // Categorías con su ícono emoji — nombres en español igual que el backend/seed
   static const List<Map<String, String>> _categorias = [
-    {'nombre': 'Chicken',    'emoji': '🍗'},
-    {'nombre': 'Beef',       'emoji': '🥩'},
-    {'nombre': 'Seafood',    'emoji': '🦐'},
-    {'nombre': 'Vegetarian', 'emoji': '🥗'},
-    {'nombre': 'Dessert',    'emoji': '🍰'},
-    {'nombre': 'Pasta',      'emoji': '🍝'},
-    {'nombre': 'Pork',       'emoji': '🥓'},
-    {'nombre': 'Lamb',       'emoji': '🍖'},
-    {'nombre': 'Breakfast',  'emoji': '🍳'},
-    {'nombre': 'Side',       'emoji': '🍚'},
+    {'nombre': 'Pollo',        'emoji': '🍗'},
+    {'nombre': 'Res',          'emoji': '🥩'},
+    {'nombre': 'Mariscos',     'emoji': '🦐'},
+    {'nombre': 'Vegetariano',  'emoji': '🥗'},
+    {'nombre': 'Postres',      'emoji': '🍰'},
+    {'nombre': 'Sopas',        'emoji': '🍲'},
   ];
 
   @override
