@@ -43,4 +43,16 @@ class RecetasDatasource implements RecetasRepository {
   @override
   Future<List<CategoryModel>> obtenerCategorias() =>
       _api.obtenerCategorias();
+
+  @override
+  Future<RecipeModel?> crearReceta(Map<String, dynamic> datos, String token) =>
+      _api.crearReceta(datos, token);
+
+  @override
+  Future<RecipeModel?> actualizarReceta(String id, Map<String, dynamic> datos, String token) =>
+      _api.actualizarReceta(id, datos, token);
+
+  @override
+  Future<bool> eliminarReceta(String id, String token) =>
+      _api.eliminarReceta(id, token);
 }

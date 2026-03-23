@@ -34,4 +34,13 @@ abstract class RecetasRepository {
 
   /// Devuelve todas las categorías disponibles
   Future<List<CategoryModel>> obtenerCategorias();
+
+  /// Crea una nueva receta (requiere token JWT)
+  Future<RecipeModel?> crearReceta(Map<String, dynamic> datos, String token);
+
+  /// Actualiza una receta existente (requiere token JWT)
+  Future<RecipeModel?> actualizarReceta(String id, Map<String, dynamic> datos, String token);
+
+  /// Elimina una receta (requiere token JWT)
+  Future<bool> eliminarReceta(String id, String token);
 }

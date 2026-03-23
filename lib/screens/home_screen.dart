@@ -5,6 +5,7 @@ import '../models/recipe_model.dart';
 import '../models/category_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/recipe_grid.dart';
+import 'category_screen.dart';
 
 // ══════════════════════════════════════════════════════════════
 // CLASE 12 — HomeScreen: Get.find en lugar de Get.put
@@ -23,7 +24,10 @@ import '../widgets/recipe_grid.dart';
 //   Usa UN solo Obx que lea todos los observables que necesitas.
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  // Callback que ejecuta MainScreen para cambiar a la tab de búsqueda
+  final VoidCallback? onBuscarTap;
+
+  const HomeScreen({super.key, this.onBuscarTap});
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +56,7 @@ class HomeScreen extends StatelessWidget {
         categorias:     categorias,
         populares:      populares,
         cargandoReceta: cargandoRec,
+        onBuscarTap:    onBuscarTap,
       );
     });
   }
@@ -114,6 +119,7 @@ class HomeScreen extends StatelessWidget {
     required List<CategoryModel> categorias,
     required List<RecipeModel> populares,
     required bool cargandoReceta,
+    VoidCallback? onBuscarTap,
   }) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -125,7 +131,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
+              _buildHeader(onBuscarTap: onBuscarTap),
 
               if (receta != null)
                 Padding(
@@ -179,7 +185,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── ENCABEZADO ────────────────────────────────────────────────────
-  Widget _buildHeader() {
+  Widget _buildHeader({VoidCallback? onBuscarTap}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 56, 20, 28),
@@ -206,26 +212,30 @@ class HomeScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: Colors.white)),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.search, color: Color(0xFFFF6B35)),
-                SizedBox(width: 10),
-                Text('Buscar recetas...',
-                    style: TextStyle(color: Colors.grey, fontSize: 15)),
-              ],
+          // Al tocar la barra se cambia a la tab de Buscar
+          GestureDetector(
+            onTap: onBuscarTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.search, color: Color(0xFFFF6B35)),
+                  SizedBox(width: 10),
+                  Text('Buscar recetas...',
+                      style: TextStyle(color: Colors.grey, fontSize: 15)),
+                ],
+              ),
             ),
           ),
         ],
@@ -376,47 +386,95 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── CHIP DE CATEGORÍA ─────────────────────────────────────────────
+  // Delegamos a un widget con estado propio para manejar la animación de press
   Widget _buildCategoriaChip(CategoryModel categoria) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      width: 80,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    return _CategoriaChip(categoria: categoria);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Widget separado para animar el chip al presionar
+// ══════════════════════════════════════════════════════════════
+class _CategoriaChip extends StatefulWidget {
+  final CategoryModel categoria;
+  const _CategoriaChip({required this.categoria});
+
+  @override
+  State<_CategoriaChip> createState() => _CategoriaChipState();
+}
+
+class _CategoriaChipState extends State<_CategoriaChip> {
+  double _escala = 1.0; // escala normal
+
+  void _alPresionar(bool presionando) {
+    setState(() {
+      // Se achica a 0.88 al presionar, regresa a 1.0 al soltar
+      _escala = presionando ? 0.88 : 1.0;
+    });
+  }
+
+  void _navegar() {
+    Get.to(
+      () => CategoryScreen(categoria: widget.categoria.strCategory),
+      // Transición tipo fadeIn al navegar
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _navegar,
+      onTapDown: (_) => _alPresionar(true),   // inicia animación al tocar
+      onTapUp: (_) => _alPresionar(false),     // termina al soltar
+      onTapCancel: () => _alPresionar(false),  // termina si cancela el gesto
+      child: AnimatedScale(
+        scale: _escala,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        child: Container(
+          margin: const EdgeInsets.only(right: 12),
+          width: 80,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFFFE0CC), width: 1.5),
           ),
-        ],
-        border: Border.all(color: const Color(0xFFFFE0CC), width: 1.5),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              categoria.strCategoryThumb,
-              width: 44,
-              height: 44,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => const Icon(
-                  Icons.restaurant, color: AppColors.primary, size: 28),
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  widget.categoria.strCategoryThumb,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => const Icon(
+                      Icons.restaurant, color: AppColors.primary, size: 28),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                widget.categoria.strCategory,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF555555)),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            categoria.strCategory,
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF555555)),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+        ),
       ),
     );
   }

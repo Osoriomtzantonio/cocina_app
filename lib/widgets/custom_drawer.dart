@@ -4,6 +4,8 @@ import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
 import '../screens/category_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/profile_screen.dart';
+import '../screens/mis_recetas_screen.dart';
 
 // Menú lateral de navegación con categorías
 class CustomDrawer extends StatelessWidget {
@@ -237,6 +239,42 @@ class CustomDrawer extends StatelessWidget {
           children: [
             const Divider(color: AppColors.grey200),
             const SizedBox(height: 4),
+
+            // ── OPCIONES SOLO PARA USUARIOS LOGUEADOS ─────────────
+            if (logueado) ...[
+              ListTile(
+                leading: const Icon(Icons.person_outline,
+                    color: AppColors.primary),
+                title: Text('Mi perfil',
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w600)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                contentPadding: EdgeInsets.zero,
+                onTap: () {
+                  Navigator.pop(context);
+                  Get.to(() => const ProfileScreen(),
+                      transition: Transition.rightToLeft);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined,
+                    color: AppColors.primary),
+                title: Text('Mis recetas',
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w600)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                contentPadding: EdgeInsets.zero,
+                onTap: () {
+                  Navigator.pop(context);
+                  Get.to(() => const MisRecetasScreen(),
+                      transition: Transition.rightToLeft);
+                },
+              ),
+              const SizedBox(height: 4),
+            ],
+
             ListTile(
               leading: Icon(
                 logueado ? Icons.logout : Icons.login,

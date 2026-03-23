@@ -31,13 +31,8 @@ class _MainScreenState extends State<MainScreen> {
     BusquedaBinding().dependencies(); // registra BusquedaController
   }
 
-  // Lista de pantallas que corresponden a cada tab
-  // Se crean una sola vez y se mantienen en memoria al cambiar de tab
-  final List<Widget> _pantallas = [
-    const HomeScreen(),
-    SearchScreen(),        // no const: tiene TextEditingController interno
-    const FavoritesScreen(),
-  ];
+  // Cambia la tab activa al índice de Buscar
+  void _irABuscar() => setState(() => _tabActiva = 1);
 
   // Títulos de la AppBar para cada tab
   final List<String> _titulos = ['CocinaApp', 'Buscar', 'Mis favoritas'];
@@ -64,7 +59,11 @@ class _MainScreenState extends State<MainScreen> {
       // (a diferencia de if/else que destruye y recrea la pantalla)
       body: IndexedStack(
         index: _tabActiva,
-        children: _pantallas,
+        children: [
+          HomeScreen(onBuscarTap: _irABuscar), // pasa callback para abrir búsqueda
+          SearchScreen(),
+          const FavoritesScreen(),
+        ],
       ),
 
       // ── BOTTOM NAVIGATION BAR ───────────────────────────────────

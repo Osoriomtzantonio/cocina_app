@@ -142,8 +142,6 @@ class ApiService {
   }
 
   // ── DETALLE COMPLETO DE UNA RECETA ───────────────────────────────
-  // Obtiene todos los campos: ingredientes, instrucciones, etc.
-  // Se usa desde RecipeDetailScreen y como complemento de filtros.
   Future<RecipeModel?> obtenerDetalle(String idMeal) async {
     try {
       final response =
@@ -158,6 +156,64 @@ class ApiService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  // ── HEADERS CON JWT ───────────────────────────────────────────────
+  Map<String, String> _headersAuth(String token) => {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+
+  // ── CREAR RECETA (requiere JWT) ───────────────────────────────────
+  Future<RecipeModel?> crearReceta(Map<String, dynamic> datos, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/recetas'),
+        headers: _headersAuth(token),
+        body: jsonEncode(datos),
+      );
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final meals = data['meals'] as List<dynamic>;
+        return RecipeModel.fromJson(meals.first as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ── ACTUALIZAR RECETA (requiere JWT) ──────────────────────────────
+  Future<RecipeModel?> actualizarReceta(
+      String id, Map<String, dynamic> datos, String token) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/recetas/$id'),
+        headers: _headersAuth(token),
+        body: jsonEncode(datos),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final meals = data['meals'] as List<dynamic>;
+        return RecipeModel.fromJson(meals.first as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ── ELIMINAR RECETA (requiere JWT) ────────────────────────────────
+  Future<bool> eliminarReceta(String id, String token) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/recetas/$id'),
+        headers: _headersAuth(token),
+      );
+      return response.statusCode == 204;
+    } catch (e) {
+      return false;
     }
   }
 }
