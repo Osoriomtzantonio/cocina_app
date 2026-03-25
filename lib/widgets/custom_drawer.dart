@@ -6,6 +6,7 @@ import '../screens/category_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/mis_recetas_screen.dart';
+import '../screens/shopping_list_screen.dart';
 
 // Menú lateral de navegación con categorías
 class CustomDrawer extends StatelessWidget {
@@ -274,6 +275,24 @@ class CustomDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 4),
             ],
+
+            // ── LISTA DE COMPRAS (visible para todos) ──────────────
+            ListTile(
+              leading: const Icon(Icons.shopping_cart_outlined,
+                  color: AppColors.primary),
+              title: Text('Lista de compras',
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w600)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              contentPadding: EdgeInsets.zero,
+              onTap: () {
+                Navigator.pop(context);
+                Get.to(() => const ShoppingListScreen(),
+                    transition: Transition.rightToLeft);
+              },
+            ),
+            const SizedBox(height: 4),
 
             ListTile(
               leading: Icon(

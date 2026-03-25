@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../models/recipe_model.dart';
 import '../models/category_model.dart';
 import '../repositories/recetas_repository.dart';
+import '../services/recent_recipes_service.dart';
 
 // ══════════════════════════════════════════════════════════════
 // CLASE 12 — HomeController actualizado con Repository
@@ -28,11 +29,14 @@ class HomeController extends GetxController {
   // .obs convierte la variable en "reactiva":
   // cualquier Obx() que la use se reconstruye automáticamente al cambiar
 
-  final cargando      = true.obs;          // RxBool
-  final error         = Rxn<String>();     // Rxn = observable que puede ser null
-  final recetaDia     = Rxn<RecipeModel>();
-  final categorias    = <CategoryModel>[].obs;  // RxList
-  final populares     = <RecipeModel>[].obs;
+  final _recentService = RecentRecipesService();
+
+  final cargando       = true.obs;
+  final error          = Rxn<String>();
+  final recetaDia      = Rxn<RecipeModel>();
+  final categorias     = <CategoryModel>[].obs;
+  final populares      = <RecipeModel>[].obs;
+  final recientes      = <RecipeModel>[].obs;   // recetas vistas recientemente
   final cargandoReceta = false.obs;
 
   // ── onInit: equivalente a initState() ────────────────────────────
@@ -67,7 +71,16 @@ class HomeController extends GetxController {
     recetaDia.value = receta;
     categorias.assignAll(cats);                           // assignAll reemplaza la lista
     populares.assignAll(pops.length > 6 ? pops.sublist(0, 6) : pops);
-    cargando.value  = false;
+    cargando.value = false;
+
+    // Cargar recientes (no bloquea la carga principal)
+    await cargarRecientes();
+  }
+
+  // ── CARGAR RECETAS RECIENTES ──────────────────────────────────────
+  Future<void> cargarRecientes() async {
+    final lista = await _recentService.obtenerRecientes();
+    recientes.assignAll(lista);
   }
 
   // ── RECARGAR RECETA DEL DÍA ───────────────────────────────────────

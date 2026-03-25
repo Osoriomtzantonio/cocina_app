@@ -216,4 +216,54 @@ class ApiService {
       return false;
     }
   }
+
+  // ── OBTENER CALIFICACIÓN DE UNA RECETA (público) ──────────────────
+  Future<Map<String, dynamic>> obtenerCalificacion(String recetaId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/calificaciones/$recetaId'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'promedio': 0.0, 'total': 0};
+    } catch (e) {
+      return {'promedio': 0.0, 'total': 0};
+    }
+  }
+
+  // ── OBTENER MI CALIFICACIÓN (requiere JWT) ────────────────────────
+  Future<int> obtenerMiCalificacion(String recetaId, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/calificaciones/$recetaId/mia'),
+        headers: _headersAuth(token),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return (data['puntuacion'] as int?) ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // ── CALIFICAR RECETA (requiere JWT) ───────────────────────────────
+  Future<Map<String, dynamic>?> calificarReceta(
+      String recetaId, int puntuacion, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/calificaciones/$recetaId'),
+        headers: _headersAuth(token),
+        body: jsonEncode({'puntuacion': puntuacion}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 }

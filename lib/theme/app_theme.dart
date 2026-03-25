@@ -108,17 +108,15 @@ class AppTextStyles {
 class AppTheme {
   AppTheme._();
 
+  // ── TEMA CLARO ────────────────────────────────────────────────────
   static ThemeData get theme => ThemeData(
     useMaterial3: true,
-    // Esquema de color basado en nuestro naranja principal
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       surface: AppColors.surface,
     ),
-    // Color de fondo de todos los Scaffold
     scaffoldBackgroundColor: AppColors.background,
-    // Estilo de la AppBar
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
@@ -130,7 +128,6 @@ class AppTheme {
         color: Colors.white,
       ),
     ),
-    // Estilo global de texto
     textTheme: const TextTheme(
       headlineLarge:  AppTextStyles.heading1,
       headlineMedium: AppTextStyles.heading2,
@@ -139,6 +136,48 @@ class AppTheme {
       bodyMedium:     AppTextStyles.bodyMedium,
       bodySmall:      AppTextStyles.bodySmall,
       labelSmall:     AppTextStyles.caption,
+    ),
+  );
+
+  // ── TEMA OSCURO ───────────────────────────────────────────────────
+  static ThemeData get darkTheme => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      primary: AppColors.primary,
+      surface: const Color(0xFF1E1E1E),
+      brightness: Brightness.dark,
+    ),
+    scaffoldBackgroundColor: const Color(0xFF121212),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1A1A1A),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    ),
+    cardColor: const Color(0xFF1E1E1E),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Color(0xFF1A1A1A),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF1A1A1A),
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: Colors.white54,
+    ),
+    textTheme: TextTheme(
+      headlineLarge:  AppTextStyles.heading1.copyWith(color: Colors.white),
+      headlineMedium: AppTextStyles.heading2.copyWith(color: Colors.white),
+      headlineSmall:  AppTextStyles.heading3.copyWith(color: Colors.white),
+      bodyLarge:      AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
+      bodyMedium:     AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+      bodySmall:      AppTextStyles.bodySmall.copyWith(color: Colors.white54),
+      labelSmall:     AppTextStyles.caption.copyWith(color: Colors.white38),
     ),
   );
 }

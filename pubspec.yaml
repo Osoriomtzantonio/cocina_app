@@ -44,6 +44,9 @@ dependencies:
   # Manejador de estado, navegación y dependencias
   get: ^4.6.6
 
+  # Compartir contenido con otras apps (WhatsApp, correo, etc.)
+  share_plus: ^10.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -5,25 +5,21 @@ import '../theme/app_theme.dart';
 import '../widgets/recipe_grid.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 11 — SearchScreen con GetX
+// SearchScreen — búsqueda con filtros por categoría
+//
+// Novedad:
+//   - Chips de categoría horizontales deslizables
+//   - Al tocar un chip filtra por esa categoría
+//   - Combina búsqueda por texto + filtro por categoría
 // ══════════════════════════════════════════════════════════════
-//
-// Cambio respecto a Clase 09:
-//   Antes: StatefulWidget con Timer, TextEditingController, setState...
-//   Ahora: StatelessWidget — toda la lógica está en BusquedaController
-//
-// El TextEditingController sigue aquí porque es un controlador de UI
-// (maneja el campo de texto), no de estado de negocio.
 
 class SearchScreen extends StatelessWidget {
   SearchScreen({super.key});
 
-  // TextEditingController es de UI — va en la pantalla, no en el controller
   final _textController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    // find<T>() busca la instancia registrada por BusquedaBinding
     final ctrl = Get.find<BusquedaController>();
 
     return Scaffold(
@@ -36,8 +32,13 @@ class SearchScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // ── BARRA DE BÚSQUEDA ───────────────────────────────────
           _buildBarraBusqueda(ctrl),
-          // Obx escucha query, cargando, resultados y sinResultados
+
+          // ── CHIPS DE CATEGORÍAS ─────────────────────────────────
+          Obx(() => _buildChipsCategorias(ctrl)),
+
+          // ── CONTENIDO ───────────────────────────────────────────
           Expanded(child: Obx(() => _buildContenido(ctrl))),
         ],
       ),
@@ -63,14 +64,12 @@ class SearchScreen extends StatelessWidget {
         ),
         child: TextField(
           controller: _textController,
-          // Delegamos el manejo al BusquedaController
           onChanged: ctrl.onQueryChanged,
           decoration: InputDecoration(
             hintText: 'Escribe el nombre de una receta...',
-            hintStyle:
-                AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
+            hintStyle: AppTextStyles.bodyMedium
+                .copyWith(color: AppColors.textHint),
             prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-            // Obx para el botón X — solo se reconstruye este pequeño widget
             suffixIcon: Obx(() => ctrl.query.value.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.close,
@@ -89,17 +88,70 @@ class SearchScreen extends StatelessWidget {
     );
   }
 
+  // ── CHIPS HORIZONTALES DE CATEGORÍAS ─────────────────────────────
+  Widget _buildChipsCategorias(BusquedaController ctrl) {
+    if (ctrl.categorias.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: ctrl.categorias.map((cat) {
+            final activa =
+                ctrl.categoriaSeleccionada.value == cat.strCategory;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => ctrl.seleccionarCategoria(cat.strCategory),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: activa ? AppColors.primary : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: activa
+                          ? AppColors.primary
+                          : AppColors.grey200,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    cat.strCategory,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: activa
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   // ── CONTENIDO DINÁMICO ────────────────────────────────────────────
-  // Este método se llama dentro de Obx(), por eso NO necesita ser un widget
   Widget _buildContenido(BusquedaController ctrl) {
-    if (ctrl.query.value.isEmpty)   return _buildEstadoVacio();
+    final hayCategoria = ctrl.categoriaSeleccionada.value != null;
+    final hayQuery     = ctrl.query.value.isNotEmpty;
+
+    if (!hayQuery && !hayCategoria) return _buildEstadoVacio();
     if (ctrl.cargando.value)        return _buildEstadoCargando(ctrl);
     if (ctrl.sinResultados.value)   return _buildSinResultados(ctrl);
     if (ctrl.resultados.isNotEmpty) return _buildResultados(ctrl);
     return _buildEstadoVacio();
   }
 
-  // ── ESTADO: CAMPO VACÍO ───────────────────────────────────────────
+  // ── VACÍO ─────────────────────────────────────────────────────────
   Widget _buildEstadoVacio() {
     return Center(
       child: Column(
@@ -111,7 +163,7 @@ class SearchScreen extends StatelessWidget {
           Text('¿Qué quieres cocinar hoy?', style: AppTextStyles.heading3),
           const SizedBox(height: 8),
           Text(
-            'Escribe el nombre de una receta\npara comenzar a buscar',
+            'Escribe un nombre o selecciona\nuna categoría para filtrar',
             style: AppTextStyles.bodyMedium
                 .copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
@@ -121,7 +173,7 @@ class SearchScreen extends StatelessWidget {
     );
   }
 
-  // ── ESTADO: CARGANDO ─────────────────────────────────────────────
+  // ── CARGANDO ──────────────────────────────────────────────────────
   Widget _buildEstadoCargando(BusquedaController ctrl) {
     return Center(
       child: Column(
@@ -130,7 +182,9 @@ class SearchScreen extends StatelessWidget {
           const CircularProgressIndicator(color: AppColors.primary),
           const SizedBox(height: 16),
           Text(
-            'Buscando "${ctrl.query.value}"...',
+            ctrl.query.value.isNotEmpty
+                ? 'Buscando "${ctrl.query.value}"...'
+                : 'Cargando ${ctrl.categoriaSeleccionada.value ?? ""}...',
             style: AppTextStyles.bodyMedium
                 .copyWith(color: AppColors.textSecondary),
           ),
@@ -139,7 +193,7 @@ class SearchScreen extends StatelessWidget {
     );
   }
 
-  // ── ESTADO: SIN RESULTADOS ────────────────────────────────────────
+  // ── SIN RESULTADOS ────────────────────────────────────────────────
   Widget _buildSinResultados(BusquedaController ctrl) {
     return Center(
       child: Column(
@@ -149,15 +203,16 @@ class SearchScreen extends StatelessWidget {
               size: 72, color: AppColors.primary.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
           Text(
-            'Sin resultados para "${ctrl.query.value}"',
+            ctrl.query.value.isNotEmpty
+                ? 'Sin resultados para "${ctrl.query.value}"'
+                : 'Sin recetas en ${ctrl.categoriaSeleccionada.value}',
             style: AppTextStyles.heading3,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
-            'Intenta con otro nombre\no revisa la ortografía',
-            style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
+          const Text(
+            'Intenta con otro nombre\no selecciona otra categoría',
+            style: TextStyle(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -165,15 +220,28 @@ class SearchScreen extends StatelessWidget {
     );
   }
 
-  // ── ESTADO: RESULTADOS ────────────────────────────────────────────
+  // ── RESULTADOS ────────────────────────────────────────────────────
   Widget _buildResultados(BusquedaController ctrl) {
+    String etiqueta;
+    if (ctrl.query.value.isNotEmpty &&
+        ctrl.categoriaSeleccionada.value != null) {
+      etiqueta =
+          '${ctrl.resultados.length} resultado${ctrl.resultados.length != 1 ? "s" : ""} en ${ctrl.categoriaSeleccionada.value}';
+    } else if (ctrl.categoriaSeleccionada.value != null) {
+      etiqueta =
+          '${ctrl.resultados.length} receta${ctrl.resultados.length != 1 ? "s" : ""} de ${ctrl.categoriaSeleccionada.value}';
+    } else {
+      etiqueta =
+          '${ctrl.resultados.length} resultado${ctrl.resultados.length != 1 ? "s" : ""} para "${ctrl.query.value}"';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
           child: Text(
-            '${ctrl.resultados.length} resultado${ctrl.resultados.length != 1 ? "s" : ""} para "${ctrl.query.value}"',
+            etiqueta,
             style: AppTextStyles.bodyMedium
                 .copyWith(color: AppColors.textSecondary),
           ),

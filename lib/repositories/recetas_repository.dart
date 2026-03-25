@@ -43,4 +43,14 @@ abstract class RecetasRepository {
 
   /// Elimina una receta (requiere token JWT)
   Future<bool> eliminarReceta(String id, String token);
+
+  /// Devuelve el promedio de calificaciones {promedio, total}
+  Future<Map<String, dynamic>> obtenerCalificacion(String recetaId);
+
+  /// Devuelve la calificación del usuario actual (0 si no ha calificado)
+  Future<int> obtenerMiCalificacion(String recetaId, String token);
+
+  /// Califica una receta con 1-5 estrellas
+  Future<Map<String, dynamic>?> calificarReceta(
+      String recetaId, int puntuacion, String token);
 }

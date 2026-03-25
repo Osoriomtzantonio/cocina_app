@@ -55,4 +55,17 @@ class RecetasDatasource implements RecetasRepository {
   @override
   Future<bool> eliminarReceta(String id, String token) =>
       _api.eliminarReceta(id, token);
+
+  @override
+  Future<Map<String, dynamic>> obtenerCalificacion(String recetaId) =>
+      _api.obtenerCalificacion(recetaId);
+
+  @override
+  Future<int> obtenerMiCalificacion(String recetaId, String token) =>
+      _api.obtenerMiCalificacion(recetaId, token);
+
+  @override
+  Future<Map<String, dynamic>?> calificarReceta(
+          String recetaId, int puntuacion, String token) =>
+      _api.calificarReceta(recetaId, puntuacion, token);
 }

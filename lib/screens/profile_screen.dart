@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/theme_controller.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -116,6 +117,11 @@ class ProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
 
+          // ── TOGGLE MODO OSCURO ────────────────────────────────────
+          const SizedBox(height: 16),
+          _buildToggleTema(),
+
+          const SizedBox(height: 16),
           // ── BOTÓN CERRAR SESIÓN ────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -141,6 +147,48 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  // ── TOGGLE MODO OSCURO ────────────────────────────────────────────
+  Widget _buildToggleTema() {
+    final themeCtrl = Get.find<ThemeController>();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Obx(() {
+        final oscuro = themeCtrl.esModoOscuro.value;
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: SwitchListTile(
+            value: oscuro,
+            onChanged: (_) => themeCtrl.toggleTema(),
+            secondary: Icon(
+              oscuro ? Icons.dark_mode : Icons.light_mode,
+              color: AppColors.primary,
+            ),
+            title: Text(
+              oscuro ? 'Modo oscuro' : 'Modo claro',
+              style: const TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+            activeThumbColor: AppColors.primary,
+            activeTrackColor: AppColors.primaryLight,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
+          ),
+        );
+      }),
     );
   }
 
@@ -223,6 +271,8 @@ class ProfileScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold)),
               ),
             ),
+            const SizedBox(height: 24),
+            _buildToggleTema(),
           ],
         ),
       ),

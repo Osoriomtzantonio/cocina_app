@@ -6,6 +6,7 @@ import '../models/category_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/recipe_grid.dart';
 import 'category_screen.dart';
+import 'recipe_detail_screen.dart';
 
 // ══════════════════════════════════════════════════════════════
 // CLASE 12 — HomeScreen: Get.find en lugar de Get.put
@@ -41,8 +42,9 @@ class HomeScreen extends StatelessWidget {
       final cargando      = ctrl.cargando.value;
       final error         = ctrl.error.value;
       final receta        = ctrl.recetaDia.value;
-      final categorias    = ctrl.categorias.toList();   // RxList → List normal
+      final categorias    = ctrl.categorias.toList();
       final populares     = ctrl.populares.toList();
+      final recientes     = ctrl.recientes.toList();
       final cargandoRec   = ctrl.cargandoReceta.value;
 
       // ── Estados ─────────────────────────────────────────────────
@@ -55,6 +57,7 @@ class HomeScreen extends StatelessWidget {
         receta:         receta,
         categorias:     categorias,
         populares:      populares,
+        recientes:      recientes,
         cargandoReceta: cargandoRec,
         onBuscarTap:    onBuscarTap,
       );
@@ -118,6 +121,7 @@ class HomeScreen extends StatelessWidget {
     required RecipeModel? receta,
     required List<CategoryModel> categorias,
     required List<RecipeModel> populares,
+    required List<RecipeModel> recientes,
     required bool cargandoReceta,
     VoidCallback? onBuscarTap,
   }) {
@@ -176,6 +180,22 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               RecipeGrid(recetas: populares, shrinkWrap: true),
+
+              // ── VISTAS RECIENTEMENTE ──────────────────────────────
+              if (recientes.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('Vistas recientemente',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333))),
+                ),
+                const SizedBox(height: 12),
+                _buildRecientesHorizontal(recientes),
+              ],
+
               const SizedBox(height: 24),
             ],
           ),
@@ -386,9 +406,84 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── CHIP DE CATEGORÍA ─────────────────────────────────────────────
-  // Delegamos a un widget con estado propio para manejar la animación de press
   Widget _buildCategoriaChip(CategoryModel categoria) {
     return _CategoriaChip(categoria: categoria);
+  }
+
+  // ── RECIENTES: lista horizontal de tarjetas pequeñas ─────────────
+  Widget _buildRecientesHorizontal(List<RecipeModel> recientes) {
+    return SizedBox(
+      height: 140,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: recientes.length,
+        itemBuilder: (context, i) => _buildRecienteCard(recientes[i]),
+      ),
+    );
+  }
+
+  Widget _buildRecienteCard(RecipeModel receta) {
+    return GestureDetector(
+      onTap: () => Get.to(() => RecipeDetailScreen(
+            idMeal:    receta.idMeal,
+            nombre:    receta.strMeal,
+            imagenUrl: receta.strMealThumb,
+          )),
+      child: Container(
+        width: 120,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16)),
+              child: receta.strMealThumb.isNotEmpty
+                  ? Image.network(
+                      receta.strMealThumb,
+                      height: 88,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 88,
+                        color: const Color(0xFFFFE0CC),
+                        child: const Icon(Icons.restaurant,
+                            color: AppColors.primary),
+                      ),
+                    )
+                  : Container(
+                      height: 88,
+                      color: const Color(0xFFFFE0CC),
+                      child: const Icon(Icons.restaurant,
+                          color: AppColors.primary),
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+              child: Text(
+                receta.strMeal,
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w600),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

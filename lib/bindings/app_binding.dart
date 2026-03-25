@@ -25,10 +25,10 @@ class AppBinding extends Bindings {
     );
 
     // AuthController registrado globalmente
-    // → disponible en CustomDrawer, LoginScreen y RegisterScreen
     Get.lazyPut<AuthController>(
       () => AuthController(),
       fenix: true,
     );
+
   }
 }

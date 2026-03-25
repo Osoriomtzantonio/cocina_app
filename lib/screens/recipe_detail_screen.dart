@@ -1,38 +1,27 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart' show Share;
+import '../controllers/auth_controller.dart';
+import '../controllers/home_controller.dart';
 import '../models/recipe_model.dart';
+import '../repositories/recetas_repository.dart';
+import '../services/auth_service.dart';
 import '../services/favorites_service.dart';
-import '../services/api_service.dart';
+import '../services/recent_recipes_service.dart';
+import '../services/shopping_list_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/cooking_timer_widget.dart';
 
 // ══════════════════════════════════════════════════════════════
-// CLASE 10 — RecipeDetailScreen con FutureBuilder
+// RecipeDetailScreen — detalle de receta con FutureBuilder
+//
+// Funcionalidades:
+//   - Mostrar imagen, nombre, categoría, área
+//   - Ingredientes e instrucciones desde la API
+//   - Marcar/desmarcar favorito
+//   - Calificación con estrellas (requiere login)
+//   - Agregar ingredientes a la lista de compras
 // ══════════════════════════════════════════════════════════════
-//
-// Comparación con Clase 09 (setState manual):
-//
-//   Clase 09:
-//     bool _cargandoDetalle = true;
-//     bool _errorDetalle = false;
-//     RecipeModel? _receta;
-//     Future<void> _cargarDetalle() async {
-//       setState(() => _cargandoDetalle = true);
-//       final r = await _api.obtenerDetalle(id);
-//       setState(() { _cargandoDetalle = false; _receta = r; });
-//     }
-//
-//   Clase 10 (FutureBuilder):
-//     late final Future<RecipeModel?> _futureDetalle;  // ← solo esto
-//     // No hay bool _cargando ni bool _error — FutureBuilder los maneja
-//
-// FutureBuilder tiene 4 estados via snapshot.connectionState:
-//   - none    → el Future es null
-//   - waiting → el Future todavía no resolvió (cargando)
-//   - active  → solo para Streams
-//   - done    → el Future terminó (éxito o error)
-//
-// Diseño de esta pantalla:
-//   - SliverAppBar: muestra imagen y título INMEDIATAMENTE (de los parámetros)
-//   - Contenido:    usa FutureBuilder para ingredientes e instrucciones reales
 
 class RecipeDetailScreen extends StatefulWidget {
   final String idMeal;
@@ -51,23 +40,44 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  final FavoritesService _favoritesService = FavoritesService();
-  final ApiService _api = ApiService();
+  final _favoritesService = FavoritesService();
+  final _shoppingService  = ShoppingListService();
+  final _recentService    = RecentRecipesService();
+  final _authService      = AuthService();
+  late  final _repo       = Get.find<RecetasRepository>();
 
-  // ── ESTADO: favorito (aún usa setState porque es interacción del usuario)
-  bool _esFavorita = false;
+  // ── ESTADO ────────────────────────────────────────────────────────
+  bool   _esFavorita       = false;
+  double _promedio         = 0.0;
+  int    _totalVotos       = 0;
+  int    _miCalificacion   = 0;  // 0 = no ha calificado
+  bool   _calificando      = false;
 
-  // ── FUTURE: se crea UNA VEZ en initState ─────────────────────────
-  // late final = se inicializa después de declararse pero antes de usarse
-  // final      = no puede reasignarse (garantiza que no se recrea en rebuild)
   late final Future<RecipeModel?> _futureDetalle;
+
+  @override
+  void dispose() {
+    // Al cerrar la pantalla, refrescamos la lista de recientes en HomeController
+    try { Get.find<HomeController>().cargarRecientes(); } catch (_) {}
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
-    // Guardamos el Future en una variable — esto es clave para FutureBuilder
-    _futureDetalle = _api.obtenerDetalle(widget.idMeal);
+    _futureDetalle = _repo.obtenerDetalle(widget.idMeal);
     _verificarSiEsFavorita();
+    _cargarCalificacion();
+    // Guardar en historial de recientes (con datos básicos disponibles ya)
+    _recentService.guardarReceta(RecipeModel(
+      idMeal:          widget.idMeal,
+      strMeal:         widget.nombre,
+      strCategory:     '',
+      strArea:         '',
+      strInstructions: '',
+      strMealThumb:    widget.imagenUrl,
+      ingredientes:    [],
+    ));
   }
 
   Future<void> _verificarSiEsFavorita() async {
@@ -75,6 +85,64 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (mounted) setState(() => _esFavorita = esFav);
   }
 
+  // ── CARGAR PROMEDIO Y MI CALIFICACIÓN ─────────────────────────────
+  Future<void> _cargarCalificacion() async {
+    final datos = await _repo.obtenerCalificacion(widget.idMeal);
+    if (!mounted) return;
+    setState(() {
+      _promedio   = (datos['promedio'] as num?)?.toDouble() ?? 0.0;
+      _totalVotos = (datos['total']    as int?)             ?? 0;
+    });
+
+    // Si el usuario está logueado, cargamos su calificación personal
+    final token = await _authService.obtenerToken();
+    if (token != null) {
+      final mia = await _repo.obtenerMiCalificacion(widget.idMeal, token);
+      if (mounted) setState(() => _miCalificacion = mia);
+    }
+  }
+
+  // ── CALIFICAR ─────────────────────────────────────────────────────
+  Future<void> _calificar(int estrellas) async {
+    final token = await _authService.obtenerToken();
+    if (token == null) {
+      Get.snackbar(
+        'Inicia sesión',
+        'Debes iniciar sesión para calificar recetas',
+        backgroundColor: AppColors.primary,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    setState(() => _calificando = true);
+
+    final resultado =
+        await _repo.calificarReceta(widget.idMeal, estrellas, token);
+
+    if (resultado != null && mounted) {
+      setState(() {
+        _miCalificacion = estrellas;
+        _promedio =
+            (resultado['promedio'] as num?)?.toDouble() ?? _promedio;
+        _totalVotos = (resultado['total'] as int?) ?? _totalVotos;
+        _calificando = false;
+      });
+      Get.snackbar(
+        '¡Gracias!',
+        'Calificaste esta receta con $estrellas estrella${estrellas != 1 ? "s" : ""}',
+        backgroundColor: AppColors.primary,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    } else {
+      if (mounted) setState(() => _calificando = false);
+    }
+  }
+
+  // ── TOGGLE FAVORITO ───────────────────────────────────────────────
   Future<void> _toggleFavorito() async {
     if (_esFavorita) {
       await _favoritesService.eliminarFavorito(widget.idMeal);
@@ -89,8 +157,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         );
       }
     } else {
-      // Intentamos usar los datos completos si ya cargaron;
-      // si no, usamos los datos básicos que llegaron como parámetros
       final receta = RecipeModel(
         idMeal:          widget.idMeal,
         strMeal:         widget.nombre,
@@ -105,7 +171,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         setState(() => _esFavorita = true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('¡Receta guardada en favoritos! ✓'),
+            content: const Text('¡Receta guardada en favoritos!'),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 2),
             action: SnackBarAction(
@@ -122,36 +188,86 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     }
   }
 
+  // ── AGREGAR A LISTA DE COMPRAS ────────────────────────────────────
+  Future<void> _agregarAListaCompras(RecipeModel receta) async {
+    final agregados =
+        await _shoppingService.agregarIngredientes(receta.ingredientes);
+
+    if (!mounted) return;
+
+    if (agregados == 0) {
+      Get.snackbar(
+        'Ya están en la lista',
+        'Todos los ingredientes ya estaban en tu lista de compras',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } else {
+      Get.snackbar(
+        '¡Listo!',
+        '$agregados ingrediente${agregados != 1 ? "s" : ""} agregado${agregados != 1 ? "s" : ""} a tu lista',
+        backgroundColor: AppColors.primary,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
+  // ── COMPARTIR RECETA ──────────────────────────────────────────────
+  // Comparte el nombre, categoría e ingredientes como texto plano
+  Future<void> _compartir() async {
+    // Intentamos obtener los datos completos si ya cargaron
+    RecipeModel? detalle;
+    try {
+      detalle = await _futureDetalle;
+    } catch (_) {}
+
+    final nombre      = detalle?.strMeal      ?? widget.nombre;
+    final categoria   = detalle?.strCategory  ?? '';
+    final ingredientes = detalle?.ingredientes ?? [];
+
+    final buffer = StringBuffer();
+    buffer.writeln('🍳 *$nombre*');
+    if (categoria.isNotEmpty) buffer.writeln('📂 Categoría: $categoria');
+    buffer.writeln();
+
+    if (ingredientes.isNotEmpty) {
+      buffer.writeln('🛒 *Ingredientes:*');
+      for (final ing in ingredientes) {
+        final nombre  = ing['ingrediente'] ?? '';
+        final cantidad = ing['cantidad']   ?? '';
+        if (nombre.isNotEmpty) {
+          buffer.writeln(
+              '• $nombre${cantidad.isNotEmpty ? " — $cantidad" : ""}');
+        }
+      }
+    }
+
+    buffer.writeln();
+    buffer.writeln('Receta compartida desde CocinaApp 🍽️');
+
+    await Share.share(buffer.toString(), subject: nombre);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // La imagen y el título se muestran INMEDIATAMENTE (no esperan la API)
           _buildSliverAppBar(),
-
-          // El contenido usa FutureBuilder — espera los datos del servidor
           SliverToBoxAdapter(
             child: FutureBuilder<RecipeModel?>(
-              // Pasamos la referencia al Future almacenado (no creamos uno nuevo)
               future: _futureDetalle,
               builder: (context, snapshot) {
-                // ── ESTADO: esperando respuesta ─────────────────────
-                // ConnectionState.waiting = el Future aún no terminó
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return _buildContenidoCargando();
                 }
-
-                // ── ESTADO: error o datos nulos ─────────────────────
-                // snapshot.hasError = el Future lanzó una excepción
-                // !snapshot.hasData = el Future terminó pero devolvió null
                 if (snapshot.hasError || !snapshot.hasData) {
                   return _buildContenidoError();
                 }
-
-                // ── ESTADO: datos listos ────────────────────────────
-                // snapshot.data! = el RecipeModel con todos los detalles reales
                 return _buildContenido(snapshot.data!);
               },
             ),
@@ -161,7 +277,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── SLIVER APP BAR (inmediato — no necesita FutureBuilder) ────────
+  // ── SLIVER APP BAR ────────────────────────────────────────────────
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       expandedHeight: 280,
@@ -194,6 +310,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
         ),
+        IconButton(
+          onPressed: _compartir,
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.35),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.share_outlined,
+                color: Colors.white, size: 20),
+          ),
+        ),
         const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -221,7 +349,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           },
           errorBuilder: (context, error, stack) => Container(
             color: AppColors.primaryLight,
-            child: const Icon(Icons.broken_image, size: 64, color: AppColors.primary),
+            child: const Icon(Icons.broken_image,
+                size: 64, color: AppColors.primary),
           ),
         ),
         Positioned(
@@ -230,7 +359,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.5),
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -241,7 +373,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── CONTENIDO: CARGANDO ───────────────────────────────────────────
+  // ── CARGANDO ──────────────────────────────────────────────────────
   Widget _buildContenidoCargando() {
     return Container(
       padding: const EdgeInsets.all(32),
@@ -251,14 +383,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: Column(
         children: [
-          // Nombre disponible de inmediato (parámetro)
           Text(widget.nombre, style: AppTextStyles.heading2),
           const SizedBox(height: 32),
           const CircularProgressIndicator(color: AppColors.primary),
           const SizedBox(height: 16),
           Text(
             'Cargando ingredientes e instrucciones...',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium
+                .copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 200),
         ],
@@ -266,7 +398,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── CONTENIDO: ERROR ──────────────────────────────────────────────
+  // ── ERROR ─────────────────────────────────────────────────────────
   Widget _buildContenidoError() {
     return Container(
       padding: const EdgeInsets.all(32),
@@ -282,7 +414,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(height: 16),
           Text(
             'No se pudieron cargar los detalles.\nVerifica tu conexión.',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium
+                .copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 200),
@@ -291,7 +424,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── CONTENIDO: DATOS REALES (snapshot.data!) ─────────────────────
+  // ── CONTENIDO COMPLETO ────────────────────────────────────────────
   Widget _buildContenido(RecipeModel receta) {
     return Container(
       decoration: const BoxDecoration(
@@ -307,17 +440,34 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(height: 12),
           _buildMetadataBadges(receta),
 
-          const SizedBox(height: 24),
+          // ── SECCIÓN CALIFICACIÓN ──────────────────────────────────
+          const SizedBox(height: 20),
+          _buildSeccionCalificacion(),
+
+          const SizedBox(height: 20),
           const Divider(color: AppColors.grey200, height: 1),
           const SizedBox(height: 20),
 
           _buildSeccionIngredientes(receta),
+
+          // ── BOTÓN LISTA DE COMPRAS ────────────────────────────────
+          if (receta.ingredientes.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildBotonListaCompras(receta),
+          ],
 
           const SizedBox(height: 24),
           const Divider(color: AppColors.grey200, height: 1),
           const SizedBox(height: 20),
 
           _buildSeccionInstrucciones(receta),
+
+          // ── TIMER DE COCINA ───────────────────────────────────────
+          const SizedBox(height: 24),
+          const Divider(color: AppColors.grey200, height: 1),
+          const SizedBox(height: 20),
+          const CookingTimerWidget(),
+
           const SizedBox(height: 40),
         ],
       ),
@@ -330,9 +480,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       spacing: 10,
       runSpacing: 8,
       children: [
-        _buildBadge(icon: Icons.restaurant_menu, texto: receta.strCategory),
-        _buildBadge(icon: Icons.public,          texto: receta.strArea),
-        _buildBadge(icon: Icons.timer,           texto: '~30-45 min'),
+        if (receta.strCategory.isNotEmpty)
+          _buildBadge(icon: Icons.restaurant_menu, texto: receta.strCategory),
+        if (receta.strArea.isNotEmpty)
+          _buildBadge(icon: Icons.public, texto: receta.strArea),
+        _buildBadge(icon: Icons.timer, texto: '~30-45 min'),
       ],
     );
   }
@@ -349,8 +501,163 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         children: [
           Icon(icon, size: 14, color: AppColors.primary),
           const SizedBox(width: 6),
-          Text(texto, style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+          Text(texto,
+              style:
+                  AppTextStyles.label.copyWith(color: AppColors.primary)),
         ],
+      ),
+    );
+  }
+
+  // ── SECCIÓN CALIFICACIÓN ──────────────────────────────────────────
+  Widget _buildSeccionCalificacion() {
+    final authCtrl = Get.find<AuthController>();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── PROMEDIO ACTUAL ────────────────────────────────────
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, color: Colors.amber, size: 22),
+              const SizedBox(width: 6),
+              Text(
+                _promedio > 0
+                    ? _promedio.toStringAsFixed(1)
+                    : 'Sin calificaciones',
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              if (_totalVotos > 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '($_totalVotos voto${_totalVotos != 1 ? "s" : ""})',
+                  style: const TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary),
+                ),
+              ],
+            ],
+          ),
+
+          // Barra visual del promedio
+          if (_promedio > 0) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: _promedio / 5,
+                minHeight: 6,
+                backgroundColor: AppColors.grey200,
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Colors.amber),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: AppColors.grey200),
+          const SizedBox(height: 14),
+
+          // ── ESTRELLAS INTERACTIVAS ────────────────────────────
+          Obx(() {
+            final logueado = authCtrl.estaLogueado.value;
+
+            if (!logueado) {
+              return Row(
+                children: [
+                  const Icon(Icons.lock_outline,
+                      size: 16, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Inicia sesión para calificar',
+                    style: AppTextStyles.label
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _miCalificacion > 0
+                      ? 'Tu calificación:'
+                      : 'Califica esta receta:',
+                  style: AppTextStyles.label
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                _calificando
+                    ? const SizedBox(
+                        height: 36,
+                        width: 36,
+                        child: CircularProgressIndicator(
+                            color: AppColors.primary, strokeWidth: 2),
+                      )
+                    : _buildEstrellas(),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ── ESTRELLAS INTERACTIVAS ────────────────────────────────────────
+  Widget _buildEstrellas() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        final num = i + 1;
+        final activa = num <= _miCalificacion;
+        return GestureDetector(
+          onTap: () => _calificar(num),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Icon(
+              activa ? Icons.star_rounded : Icons.star_outline_rounded,
+              color: activa ? Colors.amber : AppColors.grey200,
+              size: 36,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  // ── BOTÓN LISTA DE COMPRAS ────────────────────────────────────────
+  Widget _buildBotonListaCompras(RecipeModel receta) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _agregarAListaCompras(receta),
+        icon: const Icon(Icons.shopping_cart_outlined,
+            color: AppColors.primary, size: 20),
+        label: const Text(
+          'Agregar ingredientes a lista de compras',
+          style: TextStyle(
+              color: AppColors.primary, fontWeight: FontWeight.w600),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.primary),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+        ),
       ),
     );
   }
@@ -378,7 +685,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildIngredienteItem({required String ingrediente, required String cantidad}) {
+  Widget _buildIngredienteItem(
+      {required String ingrediente, required String cantidad}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -386,15 +694,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           Container(
             width: 8, height: 8,
             decoration: const BoxDecoration(
-              color: AppColors.primary, shape: BoxShape.circle,
-            ),
+                color: AppColors.primary, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(ingrediente, style: AppTextStyles.bodyMedium)),
+          Expanded(
+              child: Text(ingrediente, style: AppTextStyles.bodyMedium)),
           Text(
             cantidad,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.primary, fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -409,7 +718,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.format_list_numbered, color: AppColors.primary, size: 22),
+            const Icon(Icons.format_list_numbered,
+                color: AppColors.primary, size: 22),
             const SizedBox(width: 8),
             Text('Instrucciones', style: AppTextStyles.heading3),
           ],
@@ -417,7 +727,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         const SizedBox(height: 14),
         if (receta.strInstructions.isEmpty)
           Text('Instrucciones no disponibles.',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary))
+              style: AppTextStyles.bodyMedium
+                  .copyWith(color: AppColors.textSecondary))
         else
           _buildPasos(receta.strInstructions),
       ],
@@ -441,19 +752,21 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               Container(
                 width: 28, height: 28,
                 decoration: const BoxDecoration(
-                  color: AppColors.primary, shape: BoxShape.circle,
-                ),
+                    color: AppColors.primary, shape: BoxShape.circle),
                 child: Center(
                   child: Text(
                     '${e.key + 1}',
                     style: const TextStyle(
-                      color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: Text(e.value, style: AppTextStyles.bodyMedium)),
+              Expanded(
+                  child: Text(e.value, style: AppTextStyles.bodyMedium)),
             ],
           ),
         );
