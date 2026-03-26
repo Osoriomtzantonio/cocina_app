@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => ctrl.limpiarError());
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Iniciar sesión'),
         backgroundColor: AppColors.primary,
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Text(
               'Inicia sesión para acceder a tus recetas favoritas',
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).textTheme.bodySmall?.color,
               ),
               textAlign: TextAlign.center,
             ),
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _verPassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                         onPressed: () =>
                             setState(() => _verPassword = !_verPassword),
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   '¿No tienes cuenta? ',
                   style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
+                      .copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
                 GestureDetector(
                   onTap: () => Get.off(() => const RegisterScreen()),
@@ -283,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icono, color: AppColors.textSecondary),
+      prefixIcon: Icon(icono, color: Theme.of(context).textTheme.bodySmall?.color),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(

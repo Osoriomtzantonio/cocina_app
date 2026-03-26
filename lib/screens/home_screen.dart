@@ -5,6 +5,7 @@ import '../models/recipe_model.dart';
 import '../models/category_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/recipe_grid.dart';
+import '../widgets/shimmer_loading.dart';
 import 'category_screen.dart';
 import 'recipe_detail_screen.dart';
 
@@ -64,29 +65,18 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
-  // ── CARGANDO ──────────────────────────────────────────────────────
+  // ── CARGANDO (shimmer skeleton) ──────────────────────────────────
   Widget _buildCargando() {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: AppColors.primary),
-            const SizedBox(height: 20),
-            Text('Cargando recetas...',
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: AppColors.textSecondary)),
-          ],
-        ),
-      ),
+      backgroundColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+      body: ShimmerLoading.homeScreen(Get.context!),
     );
   }
 
   // ── ERROR ─────────────────────────────────────────────────────────
   Widget _buildError(String mensaje, VoidCallback onReintentar) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(Get.context!).scaffoldBackgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -126,7 +116,7 @@ class HomeScreen extends StatelessWidget {
     VoidCallback? onBuscarTap,
   }) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(Get.context!).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: ctrl.cargarDatos,
         color: AppColors.primary,
@@ -147,21 +137,21 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text('Categorías',
                     style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF333333))),
+                        color: Theme.of(Get.context!).textTheme.bodyLarge?.color)),
               ),
               const SizedBox(height: 12),
               _buildCategorias(categorias),
 
               const SizedBox(height: 20),
 
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -169,8 +159,8 @@ class HomeScreen extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333))),
-                    Text('Ver todas',
+                            color: Theme.of(Get.context!).textTheme.bodyLarge?.color)),
+                    const Text('Ver todas',
                         style: TextStyle(
                             fontSize: 13,
                             color: Color(0xFFFF6B35),
@@ -184,13 +174,13 @@ class HomeScreen extends StatelessWidget {
               // ── VISTAS RECIENTEMENTE ──────────────────────────────
               if (recientes.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text('Vistas recientemente',
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333))),
+                          color: Theme.of(Get.context!).textTheme.bodyLarge?.color)),
                 ),
                 const SizedBox(height: 12),
                 _buildRecientesHorizontal(recientes),
@@ -275,11 +265,11 @@ class HomeScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Receta del día',
+            Text('Receta del día',
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333))),
+                    color: Theme.of(Get.context!).textTheme.bodyLarge?.color)),
             IconButton(
               onPressed: cargandoReceta ? null : ctrl.recargarRecetaDia,
               icon: cargandoReceta
@@ -434,7 +424,7 @@ class HomeScreen extends StatelessWidget {
         width: 120,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(Get.context!).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -474,8 +464,10 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
               child: Text(
                 receta.strMeal,
-                style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(Get.context!).textTheme.bodyMedium?.color),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -532,7 +524,7 @@ class _CategoriaChipState extends State<_CategoriaChip> {
           margin: const EdgeInsets.only(right: 12),
           width: 80,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -560,10 +552,10 @@ class _CategoriaChipState extends State<_CategoriaChip> {
               const SizedBox(height: 6),
               Text(
                 widget.categoria.strCategory,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF555555)),
+                    color: Theme.of(context).textTheme.bodySmall?.color),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),

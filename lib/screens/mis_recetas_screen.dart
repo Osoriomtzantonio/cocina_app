@@ -109,7 +109,7 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Mis recetas'),
         backgroundColor: AppColors.primary,
@@ -169,8 +169,8 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
             const Text('Aún no hay recetas',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Crea la primera con el botón +',
-                style: TextStyle(color: AppColors.textSecondary)),
+            Text('Crea la primera con el botón +',
+                style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
           ],
         ),
       );
@@ -236,8 +236,8 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
                   const SizedBox(height: 4),
                   Text(
                     receta.strCategory,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(
+                        fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
                   ),
                 ],
               ),
@@ -281,7 +281,7 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
   // ── PANTALLA SI NO HAY SESIÓN ─────────────────────────────────────
   Widget _buildSinSesion() {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Mis recetas'),
         backgroundColor: AppColors.primary,

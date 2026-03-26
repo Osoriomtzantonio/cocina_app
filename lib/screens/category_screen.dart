@@ -58,7 +58,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     final responsive = ResponsiveHelper.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           widget.categoria,

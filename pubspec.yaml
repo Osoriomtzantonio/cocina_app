@@ -47,6 +47,15 @@ dependencies:
   # Compartir contenido con otras apps (WhatsApp, correo, etc.)
   share_plus: ^10.1.4
 
+  # Efecto shimmer para estados de carga tipo skeleton
+  shimmer: ^3.0.0
+
+  # Notificaciones locales (recordatorio diario)
+  flutter_local_notifications: ^18.0.1
+
+  # Zona horaria para notificaciones programadas
+  timezone: ^0.10.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

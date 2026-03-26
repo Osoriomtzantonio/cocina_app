@@ -26,7 +26,7 @@ class RecipeCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -47,7 +47,7 @@ class RecipeCard extends StatelessWidget {
               _buildImagenConOverlay(),
 
               // ── PARTE INFERIOR: nombre y metadata ────────────
-              _buildInfoReceta(),
+              _buildInfoReceta(context),
             ],
           ),
         ),
@@ -138,7 +138,7 @@ class RecipeCard extends StatelessWidget {
   }
 
   // ── INFORMACIÓN DE LA RECETA ──────────────────────────────────────
-  Widget _buildInfoReceta() {
+  Widget _buildInfoReceta(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
       // ── COLUMN: nombre arriba, metadata abajo ────────────────
@@ -150,10 +150,10 @@ class RecipeCard extends StatelessWidget {
             nombre,
             maxLines: 2,
             overflow: TextOverflow.ellipsis, // "..." si el texto es muy largo
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF222222),
+              color: Theme.of(context).textTheme.bodyLarge?.color,
               height: 1.3,
             ),
           ),
@@ -182,9 +182,9 @@ class RecipeCard extends StatelessWidget {
                 child: Text(
                   categoria,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF888888),
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

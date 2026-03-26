@@ -128,6 +128,15 @@ class AppTheme {
         color: Colors.white,
       ),
     ),
+    cardColor: Colors.white,
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Colors.white,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Colors.white,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.textSecondary,
+    ),
     textTheme: const TextTheme(
       headlineLarge:  AppTextStyles.heading1,
       headlineMedium: AppTextStyles.heading2,

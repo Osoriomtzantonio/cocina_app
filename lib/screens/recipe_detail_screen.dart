@@ -7,10 +7,12 @@ import '../models/recipe_model.dart';
 import '../repositories/recetas_repository.dart';
 import '../services/auth_service.dart';
 import '../services/favorites_service.dart';
+import '../services/api_service.dart';
 import '../services/recent_recipes_service.dart';
 import '../services/shopping_list_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cooking_timer_widget.dart';
+import '../widgets/shimmer_loading.dart';
 
 // ══════════════════════════════════════════════════════════════
 // RecipeDetailScreen — detalle de receta con FutureBuilder
@@ -254,7 +256,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(),
@@ -373,38 +375,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  // ── CARGANDO ──────────────────────────────────────────────────────
+  // ── CARGANDO (shimmer skeleton) ──────────────────────────────────
   Widget _buildContenidoCargando() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        children: [
-          Text(widget.nombre, style: AppTextStyles.heading2),
-          const SizedBox(height: 32),
-          const CircularProgressIndicator(color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(
-            'Cargando ingredientes e instrucciones...',
-            style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 200),
-        ],
-      ),
-    );
+    return ShimmerLoading.recipeDetail(context);
   }
 
   // ── ERROR ─────────────────────────────────────────────────────────
   Widget _buildContenidoError() {
     return Container(
       padding: const EdgeInsets.all(32),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
@@ -415,7 +397,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           Text(
             'No se pudieron cargar los detalles.\nVerifica tu conexión.',
             style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
+                .copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 200),
@@ -427,9 +409,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   // ── CONTENIDO COMPLETO ────────────────────────────────────────────
   Widget _buildContenido(RecipeModel receta) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -467,6 +449,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const Divider(color: AppColors.grey200, height: 1),
           const SizedBox(height: 20),
           const CookingTimerWidget(),
+
+          // ── RECETAS SIMILARES ───────────────────────────────────
+          if (receta.strCategory.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Divider(color: AppColors.grey200, height: 1),
+            const SizedBox(height: 20),
+            _buildRecetasSimilares(receta),
+          ],
 
           const SizedBox(height: 40),
         ],
@@ -516,7 +506,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -545,8 +535,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(width: 6),
                 Text(
                   '($_totalVotos voto${_totalVotos != 1 ? "s" : ""})',
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(
+                      fontSize: 13, color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
               ],
             ],
@@ -578,13 +568,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             if (!logueado) {
               return Row(
                 children: [
-                  const Icon(Icons.lock_outline,
-                      size: 16, color: AppColors.textSecondary),
+                  Icon(Icons.lock_outline,
+                      size: 16, color: Theme.of(context).textTheme.bodySmall?.color),
                   const SizedBox(width: 6),
                   Text(
                     'Inicia sesión para calificar',
                     style: AppTextStyles.label
-                        .copyWith(color: AppColors.textSecondary),
+                        .copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
                   ),
                 ],
               );
@@ -598,7 +588,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ? 'Tu calificación:'
                       : 'Califica esta receta:',
                   style: AppTextStyles.label
-                      .copyWith(color: AppColors.textSecondary),
+                      .copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
                 const SizedBox(height: 8),
                 _calificando
@@ -728,10 +718,119 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         if (receta.strInstructions.isEmpty)
           Text('Instrucciones no disponibles.',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary))
+                  .copyWith(color: Theme.of(context).textTheme.bodySmall?.color))
         else
           _buildPasos(receta.strInstructions),
       ],
+    );
+  }
+
+  // ── RECETAS SIMILARES ─────────────────────────────────────────────
+  Widget _buildRecetasSimilares(RecipeModel receta) {
+    final api = ApiService();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
+            const SizedBox(width: 8),
+            Text('También te puede gustar', style: AppTextStyles.heading3),
+          ],
+        ),
+        const SizedBox(height: 14),
+        FutureBuilder<List<RecipeModel>>(
+          future: api.obtenerRecetasPorCategoria(receta.strCategory),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return ShimmerLoading.horizontalCards(context);
+            }
+            if (!snap.hasData || snap.data!.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            // Filtrar la receta actual y limitar a 8
+            final similares = snap.data!
+                .where((r) => r.idMeal != widget.idMeal)
+                .take(8)
+                .toList();
+
+            if (similares.isEmpty) return const SizedBox.shrink();
+
+            return SizedBox(
+              height: 160,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: similares.length,
+                itemBuilder: (context, i) {
+                  final r = similares[i];
+                  return _buildSimilarCard(r);
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimilarCard(RecipeModel receta) {
+    return GestureDetector(
+      onTap: () => Get.off(() => RecipeDetailScreen(
+            idMeal: receta.idMeal,
+            nombre: receta.strMeal,
+            imagenUrl: receta.strMealThumb,
+          )),
+      child: Container(
+        width: 130,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(
+                receta.strMealThumb,
+                height: 100,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 100,
+                  color: const Color(0xFFFFE0CC),
+                  child:
+                      const Icon(Icons.restaurant, color: AppColors.primary),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: Text(
+                receta.strMeal,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

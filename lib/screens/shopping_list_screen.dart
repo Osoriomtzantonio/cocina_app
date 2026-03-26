@@ -100,7 +100,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final comprados  = _items.where((i) =>  i.comprado).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           _items.isEmpty
@@ -216,7 +216,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: item.comprado ? const Color(0xFFF5F5F5) : Colors.white,
+          color: item.comprado
+              ? Theme.of(context).scaffoldBackgroundColor
+              : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(14),
           boxShadow: item.comprado
               ? []
@@ -258,8 +260,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: item.comprado
-                  ? AppColors.textSecondary
-                  : AppColors.textPrimary,
+                  ? Theme.of(context).textTheme.bodySmall?.color
+                  : Theme.of(context).textTheme.bodyLarge?.color,
               decoration: item.comprado
                   ? TextDecoration.lineThrough
                   : TextDecoration.none,
@@ -300,18 +302,20 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           Icon(Icons.shopping_cart_outlined,
               size: 80, color: AppColors.primary.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Tu lista está vacía',
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary),
+                color: Theme.of(context).textTheme.bodyLarge?.color),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Abre una receta y toca\n"Agregar a lista de compras"',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                fontSize: 14),
           ),
         ],
       ),
