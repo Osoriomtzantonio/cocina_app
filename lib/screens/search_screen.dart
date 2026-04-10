@@ -23,7 +23,7 @@ class SearchScreen extends StatelessWidget {
     final ctrl = Get.find<BusquedaController>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Buscar recetas'),
         backgroundColor: AppColors.primary,
@@ -72,8 +72,8 @@ class SearchScreen extends StatelessWidget {
             prefixIcon: const Icon(Icons.search, color: AppColors.primary),
             suffixIcon: Obx(() => ctrl.query.value.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.close,
-                        color: AppColors.textSecondary),
+                    icon: Icon(Icons.close,
+                        color: Theme.of(Get.context!).textTheme.bodySmall?.color),
                     onPressed: () {
                       _textController.clear();
                       ctrl.onQueryChanged('');
@@ -93,7 +93,7 @@ class SearchScreen extends StatelessWidget {
     if (ctrl.categorias.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      color: Colors.white,
+      color: Theme.of(Get.context!).cardColor,
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -111,7 +111,7 @@ class SearchScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: activa ? AppColors.primary : Colors.white,
+                    color: activa ? AppColors.primary : Theme.of(Get.context!).cardColor,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: activa
@@ -165,7 +165,7 @@ class SearchScreen extends StatelessWidget {
           Text(
             'Escribe un nombre o selecciona\nuna categoría para filtrar',
             style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
+                .copyWith(color: Theme.of(Get.context!).textTheme.bodySmall?.color),
             textAlign: TextAlign.center,
           ),
         ],
@@ -186,7 +186,7 @@ class SearchScreen extends StatelessWidget {
                 ? 'Buscando "${ctrl.query.value}"...'
                 : 'Cargando ${ctrl.categoriaSeleccionada.value ?? ""}...',
             style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
+                .copyWith(color: Theme.of(Get.context!).textTheme.bodySmall?.color),
           ),
         ],
       ),
@@ -210,9 +210,9 @@ class SearchScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Intenta con otro nombre\no selecciona otra categoría',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: Theme.of(Get.context!).textTheme.bodySmall?.color),
             textAlign: TextAlign.center,
           ),
         ],
@@ -243,7 +243,7 @@ class SearchScreen extends StatelessWidget {
           child: Text(
             etiqueta,
             style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
+                .copyWith(color: Theme.of(Get.context!).textTheme.bodySmall?.color),
           ),
         ),
         Expanded(child: RecipeGrid(recetas: ctrl.resultados)),

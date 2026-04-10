@@ -50,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => ctrl.limpiarError());
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Crear cuenta'),
         backgroundColor: AppColors.primary,
@@ -75,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Text(
               'Crea tu cuenta para guardar recetas favoritas',
               style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.textSecondary),
+                  .copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -138,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _verPassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                         onPressed: () =>
                             setState(() => _verPassword = !_verPassword),
@@ -169,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _verConfirmar
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                         onPressed: () =>
                             setState(() => _verConfirmar = !_verConfirmar),
@@ -262,7 +262,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Text(
                   '¿Ya tienes cuenta? ',
                   style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
+                      .copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
                 GestureDetector(
                   // Get.back() regresa a LoginScreen
@@ -305,7 +305,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icono, color: AppColors.textSecondary),
+      prefixIcon: Icon(icono, color: Theme.of(context).textTheme.bodySmall?.color),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(

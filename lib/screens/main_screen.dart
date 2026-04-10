@@ -40,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       // ── APP BAR ────────────────────────────────────────────────
       appBar: _buildAppBar(),
@@ -97,7 +97,8 @@ class _MainScreenState extends State<MainScreen> {
       // Color de los ítems no seleccionados
       unselectedItemColor: AppColors.textSecondary,
 
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor
+          ?? Theme.of(context).scaffoldBackgroundColor,
       // fixed: todas las tabs tienen el mismo ancho
       type: BottomNavigationBarType.fixed,
       elevation: 8,

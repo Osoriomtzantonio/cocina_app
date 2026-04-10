@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/theme_controller.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -18,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
     final authCtrl = Get.find<AuthController>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Mi perfil'),
         backgroundColor: AppColors.primary,
@@ -95,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(Get.context!).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -120,6 +122,12 @@ class ProfileScreen extends StatelessWidget {
           // ── TOGGLE MODO OSCURO ────────────────────────────────────
           const SizedBox(height: 16),
           _buildToggleTema(),
+
+          // ── RECORDATORIO DIARIO ─────────────────────────────────
+          if (!kIsWeb) ...[
+            const SizedBox(height: 12),
+            _buildToggleRecordatorio(),
+          ],
 
           const SizedBox(height: 16),
           // ── BOTÓN CERRAR SESIÓN ────────────────────────────────
@@ -160,7 +168,7 @@ class ProfileScreen extends StatelessWidget {
         final oscuro = themeCtrl.esModoOscuro.value;
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(Get.context!).cardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -179,8 +187,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             title: Text(
               oscuro ? 'Modo oscuro' : 'Modo claro',
-              style: const TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(Get.context!).textTheme.bodyLarge?.color),
             ),
             activeThumbColor: AppColors.primary,
             activeTrackColor: AppColors.primaryLight,
@@ -189,6 +199,102 @@ class ProfileScreen extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+
+  // ── TOGGLE RECORDATORIO DIARIO ───────────────────────────────────
+  Widget _buildToggleRecordatorio() {
+    final notifService = NotificationService();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: FutureBuilder<bool>(
+        future: notifService.estaActivo(),
+        builder: (context, snap) {
+          final activo = snap.data ?? false;
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(Get.context!).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  value: activo,
+                  onChanged: (val) async {
+                    if (val) {
+                      // Mostrar selector de hora
+                      final hora = await showTimePicker(
+                        context: context,
+                        initialTime: const TimeOfDay(hour: 12, minute: 0),
+                        helpText: '¿A qué hora te recordamos?',
+                      );
+                      if (hora != null) {
+                        await notifService.programarRecordatorio(
+                            hora.hour, hora.minute);
+                      }
+                    } else {
+                      await notifService.cancelarRecordatorio();
+                    }
+                    // Forzar rebuild
+                    Get.forceAppUpdate();
+                  },
+                  secondary: Icon(
+                    activo
+                        ? Icons.notifications_active
+                        : Icons.notifications_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(
+                    'Recordatorio diario',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(Get.context!)
+                            .textTheme
+                            .bodyLarge
+                            ?.color),
+                  ),
+                  subtitle: activo
+                      ? FutureBuilder<List<int>>(
+                          future: Future.wait([
+                            notifService.obtenerHora(),
+                            notifService.obtenerMinuto(),
+                          ]),
+                          builder: (_, s) {
+                            if (!s.hasData) return const SizedBox.shrink();
+                            final h = s.data![0];
+                            final m = s.data![1];
+                            return Text(
+                              'Todos los días a las ${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(Get.context!)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.color,
+                              ),
+                            );
+                          },
+                        )
+                      : null,
+                  activeThumbColor: AppColors.primary,
+                  activeTrackColor: AppColors.primaryLight,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -204,12 +310,15 @@ class ProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(etiqueta,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary)),
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(Get.context!).textTheme.bodySmall?.color)),
               const SizedBox(height: 2),
               Text(valor,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w500)),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(Get.context!).textTheme.bodyLarge?.color)),
             ],
           ),
         ],
@@ -228,16 +337,17 @@ class ProfileScreen extends StatelessWidget {
             Icon(Icons.person_off_outlined,
                 size: 80, color: AppColors.primary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
-            const Text('No has iniciado sesión',
+            Text('No has iniciado sesión',
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary)),
+                    color: Theme.of(Get.context!).textTheme.bodyLarge?.color)),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Inicia sesión para ver\ntu perfil y gestionar recetas',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(
+                  color: Theme.of(Get.context!).textTheme.bodySmall?.color),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -273,6 +383,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildToggleTema(),
+            if (!kIsWeb) ...[
+              const SizedBox(height: 12),
+              _buildToggleRecordatorio(),
+            ],
           ],
         ),
       ),

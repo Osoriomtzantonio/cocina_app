@@ -66,7 +66,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           _favoritos.isEmpty
@@ -117,7 +117,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           Text(
             'Explora recetas y toca el ♡\npara guardarlas aquí',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).textTheme.bodySmall?.color,
             ),
             textAlign: TextAlign.center,
           ),
@@ -194,7 +194,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

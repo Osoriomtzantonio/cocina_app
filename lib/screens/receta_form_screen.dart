@@ -147,7 +147,7 @@ class _RecetaFormScreenState extends State<RecetaFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(_esEdicion ? 'Editar receta' : 'Nueva receta'),
         backgroundColor: AppColors.primary,

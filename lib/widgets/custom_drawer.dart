@@ -34,7 +34,7 @@ class CustomDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).drawerTheme.backgroundColor,
       child: Column(
         children: [
           // ── ENCABEZADO DEL DRAWER ────────────────────────────
@@ -59,7 +59,7 @@ class CustomDrawer extends StatelessWidget {
                 Text(
                   'CATEGORÍAS',
                   style: AppTextStyles.label.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -204,7 +204,9 @@ class CustomDrawer extends StatelessWidget {
           title: Text(
             opcion['label'] as String,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: activa ? AppColors.primary : AppColors.textPrimary,
+              color: activa
+                  ? AppColors.primary
+                  : Theme.of(context).textTheme.bodyMedium?.color,
               fontWeight: activa ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -247,8 +249,9 @@ class CustomDrawer extends StatelessWidget {
                 leading: const Icon(Icons.person_outline,
                     color: AppColors.primary),
                 title: Text('Mi perfil',
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(fontWeight: FontWeight.w600)),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyMedium?.color)),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
                 contentPadding: EdgeInsets.zero,
@@ -262,8 +265,9 @@ class CustomDrawer extends StatelessWidget {
                 leading: const Icon(Icons.menu_book_outlined,
                     color: AppColors.primary),
                 title: Text('Mis recetas',
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(fontWeight: FontWeight.w600)),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyMedium?.color)),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
                 contentPadding: EdgeInsets.zero,
@@ -281,8 +285,9 @@ class CustomDrawer extends StatelessWidget {
               leading: const Icon(Icons.shopping_cart_outlined,
                   color: AppColors.primary),
               title: Text('Lista de compras',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600)),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.bodyMedium?.color)),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
               contentPadding: EdgeInsets.zero,
@@ -359,9 +364,12 @@ class CustomDrawer extends StatelessWidget {
     return ListTile(
       // Emoji como ícono visual
       leading: Text(emoji, style: const TextStyle(fontSize: 22)),
-      title: Text(nombre, style: AppTextStyles.bodyMedium),
-      trailing: const Icon(Icons.chevron_right,
-          size: 18, color: AppColors.textHint),
+      title: Text(nombre,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          )),
+      trailing: Icon(Icons.chevron_right,
+          size: 18, color: Theme.of(context).textTheme.bodySmall?.color),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       onTap: () {
         // Cierra el Drawer
