@@ -208,7 +208,7 @@ class _CookingTimerWidgetState extends State<CookingTimerWidget>
                 // Progreso animado
                 AnimatedBuilder(
                   animation: _progreso,
-                  builder: (_, __) => SizedBox(
+                  builder: (_, _) => SizedBox(
                     width: 160,
                     height: 160,
                     child: CircularProgressIndicator(

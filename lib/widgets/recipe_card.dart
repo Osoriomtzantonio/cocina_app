@@ -30,7 +30,7 @@ class RecipeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -65,21 +65,7 @@ class RecipeCard extends StatelessWidget {
         children: [
           // ── CAPA 1: Imagen de la receta ───────────────────────
           Positioned.fill(
-            child: imagenUrl.isNotEmpty
-                ? Image.network(
-                    imagenUrl,
-                    fit: BoxFit.cover, // Cubre todo el espacio disponible
-                    // Mientras carga la imagen, muestra un placeholder
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildPlaceholder();
-                    },
-                    // Si la imagen falla, muestra el placeholder
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildPlaceholder();
-                    },
-                  )
-                : _buildPlaceholder(),
+            child: _buildImagen(),
           ),
 
           // ── CAPA 2: Badge de área (país de origen) ───────────
@@ -91,7 +77,7 @@ class RecipeCard extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.55),
+                color: Colors.black.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(20),
               ),
               // ── ROW: ícono + texto del país ──────────────────
@@ -124,7 +110,7 @@ class RecipeCard extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.withValues(alpha: 0.3),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -193,6 +179,29 @@ class RecipeCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // ── IMAGEN: soporta assets locales y URLs de red ─────────────────
+  Widget _buildImagen() {
+    if (imagenUrl.isEmpty) return _buildPlaceholder();
+
+    if (imagenUrl.startsWith('assets/')) {
+      return Image.asset(
+        imagenUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _buildPlaceholder(),
+      );
+    }
+
+    return Image.network(
+      imagenUrl,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return _buildPlaceholder();
+      },
+      errorBuilder: (_, _, _) => _buildPlaceholder(),
     );
   }
 

@@ -339,15 +339,7 @@ class HomeScreen extends StatelessWidget {
           child: Stack(
             children: [
               Positioned.fill(
-                child: Image.network(
-                  imagenUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => Container(
-                    color: const Color(0xFFFFCBA4),
-                    child: const Icon(Icons.restaurant,
-                        size: 80, color: Color(0xFFFF6B35)),
-                  ),
-                ),
+                child: _buildImagenTarjeta(imagenUrl),
               ),
               Positioned(
                 bottom: 0, left: 0, right: 0,
@@ -388,6 +380,21 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // ── HELPER: imagen que soporta assets y URLs ─────────────────────
+  Widget _buildImagenTarjeta(String url) {
+    final placeholder = Container(
+      color: const Color(0xFFFFCBA4),
+      child: const Icon(Icons.restaurant, size: 80, color: Color(0xFFFF6B35)),
+    );
+    if (url.isEmpty) return placeholder;
+    if (url.startsWith('assets/')) {
+      return Image.asset(url, fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => placeholder);
+    }
+    return Image.network(url, fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => placeholder);
   }
 
   // ── CATEGORÍAS ────────────────────────────────────────────────────
@@ -450,25 +457,11 @@ class HomeScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16)),
-              child: receta.strMealThumb.isNotEmpty
-                  ? Image.network(
-                      receta.strMealThumb,
-                      height: 88,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        height: 88,
-                        color: const Color(0xFFFFE0CC),
-                        child: const Icon(Icons.restaurant,
-                            color: AppColors.primary),
-                      ),
-                    )
-                  : Container(
-                      height: 88,
-                      color: const Color(0xFFFFE0CC),
-                      child: const Icon(Icons.restaurant,
-                          color: AppColors.primary),
-                    ),
+              child: SizedBox(
+                height: 88,
+                width: double.infinity,
+                child: _buildImagenTarjeta(receta.strMealThumb),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),

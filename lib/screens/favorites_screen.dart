@@ -216,7 +216,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               receta.strMealThumb,
               width: 100, height: 100,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 width: 100, height: 100,
                 color: AppColors.primaryLight,
                 child: const Icon(Icons.restaurant,

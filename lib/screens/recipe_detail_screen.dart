@@ -332,27 +332,49 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   // ── IMAGEN PRINCIPAL ──────────────────────────────────────────────
   Widget _buildImagenPrincipal() {
+    final esAsset = widget.imagenUrl.startsWith('assets/');
+    final sinImagen = widget.imagenUrl.isEmpty;
+
+    Widget imagenWidget;
+    if (sinImagen) {
+      imagenWidget = Container(
+        color: AppColors.primaryLight,
+        child: const Icon(Icons.restaurant, size: 80, color: AppColors.primary),
+      );
+    } else if (esAsset) {
+      imagenWidget = Image.asset(
+        widget.imagenUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) => Container(
+          color: AppColors.primaryLight,
+          child: const Icon(Icons.broken_image, size: 64, color: AppColors.primary),
+        ),
+      );
+    } else {
+      imagenWidget = Image.network(
+        widget.imagenUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            color: AppColors.primaryLight,
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stack) => Container(
+          color: AppColors.primaryLight,
+          child: const Icon(Icons.broken_image,
+              size: 64, color: AppColors.primary),
+        ),
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.network(
-          widget.imagenUrl,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return Container(
-              color: AppColors.primaryLight,
-              child: const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stack) => Container(
-            color: AppColors.primaryLight,
-            child: const Icon(Icons.broken_image,
-                size: 64, color: AppColors.primary),
-          ),
-        ),
+        imagenWidget,
         Positioned(
           bottom: 0, left: 0, right: 0,
           height: 100,
