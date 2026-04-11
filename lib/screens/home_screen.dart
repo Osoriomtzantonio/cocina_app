@@ -26,10 +26,12 @@ import 'recipe_detail_screen.dart';
 //   Usa UN solo Obx que lea todos los observables que necesitas.
 
 class HomeScreen extends StatelessWidget {
-  // Callback que ejecuta MainScreen para cambiar a la tab de búsqueda
+  // Callback para cambiar a la tab de búsqueda
   final VoidCallback? onBuscarTap;
+  // Callback para abrir el Drawer lateral desde MainScreen
+  final VoidCallback? onMenuTap;
 
-  const HomeScreen({super.key, this.onBuscarTap});
+  const HomeScreen({super.key, this.onBuscarTap, this.onMenuTap});
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +63,7 @@ class HomeScreen extends StatelessWidget {
         recientes:      recientes,
         cargandoReceta: cargandoRec,
         onBuscarTap:    onBuscarTap,
+        onMenuTap:      onMenuTap,
       );
     });
   }
@@ -114,6 +117,7 @@ class HomeScreen extends StatelessWidget {
     required List<RecipeModel> recientes,
     required bool cargandoReceta,
     VoidCallback? onBuscarTap,
+    VoidCallback? onMenuTap,
   }) {
     return Scaffold(
       backgroundColor: Theme.of(Get.context!).scaffoldBackgroundColor,
@@ -125,7 +129,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(onBuscarTap: onBuscarTap),
+              _buildHeader(onBuscarTap: onBuscarTap, onMenuTap: onMenuTap),
 
               if (receta != null)
                 Padding(
@@ -195,7 +199,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ── ENCABEZADO ────────────────────────────────────────────────────
-  Widget _buildHeader({VoidCallback? onBuscarTap}) {
+  Widget _buildHeader({VoidCallback? onBuscarTap, VoidCallback? onMenuTap}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 56, 20, 28),
@@ -213,8 +217,19 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('¡Hola, cocinero! 👨‍🍳',
-              style: TextStyle(fontSize: 14, color: Colors.white70)),
+          // Fila superior: botón de menú + saludo
+          Row(
+            children: [
+              if (onMenuTap != null)
+                GestureDetector(
+                  onTap: onMenuTap,
+                  child: const Icon(Icons.menu, color: Colors.white, size: 26),
+                ),
+              if (onMenuTap != null) const SizedBox(width: 12),
+              const Text('¡Hola, cocinero! 👨‍🍳',
+                  style: TextStyle(fontSize: 14, color: Colors.white70)),
+            ],
+          ),
           const SizedBox(height: 4),
           const Text('¿Qué cocinamos hoy?',
               style: TextStyle(
@@ -425,12 +440,18 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildRecienteCard(RecipeModel receta) {
-    return GestureDetector(
-      onTap: () => Get.to(() => RecipeDetailScreen(
-            idMeal:    receta.idMeal,
-            nombre:    receta.strMeal,
-            imagenUrl: receta.strMealThumb,
-          )),
+    return Builder(
+      builder: (context) => GestureDetector(
+      onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RecipeDetailScreen(
+                idMeal:    receta.idMeal,
+                nombre:    receta.strMeal,
+                imagenUrl: receta.strMealThumb,
+              ),
+            ),
+          ),
       child: Container(
         width: 120,
         margin: const EdgeInsets.only(right: 12),
@@ -472,7 +493,8 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ), // GestureDetector
+    ); // Builder
   }
 }
 

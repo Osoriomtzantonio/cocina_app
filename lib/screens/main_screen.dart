@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
-import '../bindings/home_binding.dart';     // Clase 12
-import '../bindings/busqueda_binding.dart'; // Clase 12
+import '../bindings/home_binding.dart';
+import '../bindings/busqueda_binding.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_drawer.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'favorites_screen.dart' show FavoritesScreen, FavoritesScreenState;
 
-// Pantalla contenedora principal
-// Gestiona las tabs (BottomNavigationBar) y el Drawer lateral
+// ══════════════════════════════════════════════════════════════
+// MainScreen con navegadores anidados por tab
+//
+// Cada tab tiene su propio Navigator. Cuando el usuario abre
+// RecipeDetailScreen desde cualquier tab, el push ocurre DENTRO
+// de ese Navigator, por lo que la barra inferior (BottomNav)
+// permanece visible en todo momento.
+// ══════════════════════════════════════════════════════════════
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -17,115 +24,126 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  // Índice de la tab seleccionada (0=Inicio, 1=Buscar, 2=Favoritas)
   int _tabActiva = 0;
 
-  // Key para poder llamar cargarFavoritos() cuando el usuario entra a esa tab
+  // Key del Scaffold para abrir el Drawer desde pantallas hijas
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Key para recargar favoritos al entrar a esa tab
   final _favoritesKey = GlobalKey<FavoritesScreenState>();
 
-  // ── CLASE 12: registrar controllers por pantalla ────────────────
-  // initState se ejecuta una sola vez cuando MainScreen se crea.
-  // Llamamos a los bindings aquí para que los controllers estén
-  // disponibles antes de que las pantallas los soliciten con Get.find().
+  // Un Navigator independiente por cada tab.
+  // Esto permite navegar dentro de la tab sin ocultar el BottomNav.
+  final List<GlobalKey<NavigatorState>> _navKeys = [
+    GlobalKey<NavigatorState>(), // Tab 0 — Inicio
+    GlobalKey<NavigatorState>(), // Tab 1 — Buscar
+    GlobalKey<NavigatorState>(), // Tab 2 — Favoritas
+  ];
+
   @override
   void initState() {
     super.initState();
-    HomeBinding().dependencies();     // registra HomeController
-    BusquedaBinding().dependencies(); // registra BusquedaController
+    HomeBinding().dependencies();
+    BusquedaBinding().dependencies();
   }
 
-  // Cambia la tab activa al índice de Buscar
-  void _irABuscar() => setState(() => _tabActiva = 1);
-
-  // Cambia de tab y recarga favoritos si se navega a esa sección
+  // ── CAMBIO DE TAB ──────────────────────────────────────────────────
   void _cambiarTab(int index) {
-    setState(() => _tabActiva = index);
-    if (index == 2) {
-      // Al entrar a Favoritas, siempre recargamos para reflejar cambios recientes
-      _favoritesKey.currentState?.cargarFavoritos();
+    if (_tabActiva == index) {
+      // Toca la tab activa → vuelve a la pantalla raíz de esa tab
+      _navKeys[index].currentState?.popUntil((r) => r.isFirst);
+    } else {
+      setState(() => _tabActiva = index);
+      if (index == 2) {
+        // Espera un frame para que el Navigator esté montado antes de recargar
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _favoritesKey.currentState?.cargarFavoritos();
+        });
+      }
     }
   }
 
-  // Títulos de la AppBar para cada tab
-  final List<String> _titulos = ['CocinaApp', 'Buscar', 'Mis favoritas'];
+  // Abre el Drawer lateral desde cualquier pantalla hija
+  void _abrirDrawer() => _scaffoldKey.currentState?.openDrawer();
 
+  // ── BOTÓN ATRÁS DEL SISTEMA ────────────────────────────────────────
+  // Si el tab activo tiene historial → hace pop dentro del Navigator.
+  // Si ya está en la raíz y no es Inicio → vuelve a Inicio.
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final canPop =
+            await _navKeys[_tabActiva].currentState?.maybePop() ?? false;
+        if (!canPop && _tabActiva != 0) _cambiarTab(0);
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-      // ── APP BAR ────────────────────────────────────────────────
-      appBar: _buildAppBar(),
+        // ── DRAWER LATERAL ──────────────────────────────────────────
+        drawer: CustomDrawer(
+          tabActiva: _tabActiva,
+          onTabSeleccionada: _cambiarTab,
+        ),
 
-      // ── DRAWER LATERAL ─────────────────────────────────────────
-      drawer: CustomDrawer(
-        tabActiva: _tabActiva,
-        // Callback: cuando el drawer selecciona una tab
-        onTabSeleccionada: _cambiarTab,
+        // ── CUERPO: un Navigator por tab ────────────────────────────
+        // Offstage mantiene los navegadores montados en memoria aunque
+        // no estén visibles, conservando el estado de cada tab.
+        body: Stack(
+          children: [
+            _buildTab(
+              0,
+              HomeScreen(
+                onBuscarTap: () => _cambiarTab(1),
+                onMenuTap: _abrirDrawer,
+              ),
+            ),
+            _buildTab(1, SearchScreen()),
+            _buildTab(2, FavoritesScreen(key: _favoritesKey)),
+          ],
+        ),
+
+        // ── BOTTOM NAVIGATION BAR ───────────────────────────────────
+        bottomNavigationBar: _buildBottomNav(),
       ),
-
-      // ── CUERPO: muestra la pantalla de la tab activa ───────────
-      // IndexedStack mantiene el estado de todas las pantallas en memoria
-      // (a diferencia de if/else que destruye y recrea la pantalla)
-      body: IndexedStack(
-        index: _tabActiva,
-        children: [
-          HomeScreen(onBuscarTap: _irABuscar), // pasa callback para abrir búsqueda
-          SearchScreen(),
-          // GlobalKey permite llamar cargarFavoritos() al cambiar de tab
-          FavoritesScreen(key: _favoritesKey),
-        ],
-      ),
-
-      // ── BOTTOM NAVIGATION BAR ───────────────────────────────────
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  // ── APP BAR ──────────────────────────────────────────────────────
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      // El título cambia según la tab activa
-      title: Text(_titulos[_tabActiva]),
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      // El ícono de menú (hamburguesa) abre el Drawer automáticamente
-      // Flutter lo agrega automáticamente cuando hay un Drawer en el Scaffold
+  // Construye un tab con su propio Navigator aislado
+  Widget _buildTab(int index, Widget screen) {
+    return Offstage(
+      offstage: _tabActiva != index,
+      child: Navigator(
+        key: _navKeys[index],
+        // La ruta raíz de cada tab es la pantalla principal del tab
+        onGenerateRoute: (_) =>
+            MaterialPageRoute(builder: (_) => screen),
+      ),
     );
   }
 
-  // ── BOTTOM NAVIGATION BAR ────────────────────────────────────────
+  // ── BOTTOM NAVIGATION BAR ─────────────────────────────────────────
   Widget _buildBottomNav() {
     return BottomNavigationBar(
-      // Índice de la tab actualmente seleccionada
       currentIndex: _tabActiva,
-      // onTap: cambia de tab y recarga favoritos si es necesario
       onTap: _cambiarTab,
-
-      // Color del ícono e indicador de la tab seleccionada
       selectedItemColor: AppColors.primary,
-      // Color de los ítems no seleccionados
       unselectedItemColor: AppColors.textSecondary,
-
-      backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor
-          ?? Theme.of(context).scaffoldBackgroundColor,
-      // fixed: todas las tabs tienen el mismo ancho
+      backgroundColor:
+          Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
+              Theme.of(context).scaffoldBackgroundColor,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
-
-      // Estilos de texto para tabs seleccionadas y no seleccionadas
-      selectedLabelStyle: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 11,
-      ),
+      selectedLabelStyle:
+          const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
       unselectedLabelStyle: const TextStyle(fontSize: 11),
-
-      // ── TABS ────────────────────────────────────────────────────
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home_rounded), // Ícono relleno cuando está activa
+          activeIcon: Icon(Icons.home_rounded),
           label: 'Inicio',
         ),
         BottomNavigationBarItem(

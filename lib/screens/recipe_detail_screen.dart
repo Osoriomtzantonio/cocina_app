@@ -148,16 +148,19 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Future<void> _toggleFavorito() async {
     if (_esFavorita) {
       await _favoritesService.eliminarFavorito(widget.idMeal);
-      if (mounted) {
-        setState(() => _esFavorita = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Receta eliminada de favoritos'),
-            backgroundColor: Colors.grey,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      if (mounted) setState(() => _esFavorita = false);
+      // Get.snackbar vive en el overlay de GetX — se descarta solo al navegar
+      Get.snackbar(
+        '',
+        'Receta eliminada de favoritos',
+        titleText: const SizedBox.shrink(),
+        backgroundColor: Colors.grey.shade700,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
+      );
     } else {
       final receta = RecipeModel(
         idMeal:          widget.idMeal,
@@ -169,24 +172,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ingredientes:    [],
       );
       await _favoritesService.guardarFavorito(receta);
-      if (mounted) {
-        setState(() => _esFavorita = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('¡Receta guardada en favoritos!'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-            action: SnackBarAction(
-              label: 'Deshacer',
-              textColor: Colors.white,
-              onPressed: () async {
-                await _favoritesService.eliminarFavorito(widget.idMeal);
-                if (mounted) setState(() => _esFavorita = false);
-              },
-            ),
-          ),
-        );
-      }
+      if (mounted) setState(() => _esFavorita = true);
+      Get.snackbar(
+        '',
+        '¡Receta guardada en favoritos!',
+        titleText: const SizedBox.shrink(),
+        backgroundColor: AppColors.success,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
+        mainButton: TextButton(
+          onPressed: () async {
+            Get.back(); // cierra el snackbar
+            await _favoritesService.eliminarFavorito(widget.idMeal);
+            if (mounted) setState(() => _esFavorita = false);
+          },
+          child: const Text('Deshacer',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      );
     }
   }
 
@@ -258,8 +264,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     // ScaffoldMessenger local: los SnackBars quedan atados a ESTA pantalla.
     // Cuando el usuario navega atrás, este messenger se destruye junto con
     // sus SnackBars. Así nunca "escapan" a la pantalla anterior.
-    return ScaffoldMessenger(
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
@@ -280,8 +285,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
         ],
       ),
-    ), // Scaffold
-    ); // ScaffoldMessenger
+    );
   }
 
   // ── SLIVER APP BAR ────────────────────────────────────────────────
@@ -808,11 +812,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildSimilarCard(RecipeModel receta) {
     return GestureDetector(
-      onTap: () => Get.off(() => RecipeDetailScreen(
-            idMeal: receta.idMeal,
-            nombre: receta.strMeal,
+      onTap: () => Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RecipeDetailScreen(
+            idMeal:    receta.idMeal,
+            nombre:    receta.strMeal,
             imagenUrl: receta.strMealThumb,
-          )),
+          ),
+        ),
+      ),
       child: Container(
         width: 130,
         margin: const EdgeInsets.only(right: 12),
