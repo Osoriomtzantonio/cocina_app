@@ -412,7 +412,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: Column(
         children: [
-          Text(widget.nombre, style: AppTextStyles.heading2),
+          Text(widget.nombre, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 32),
           const Icon(Icons.wifi_off, size: 64, color: AppColors.primary),
           const SizedBox(height: 16),
@@ -439,7 +439,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(receta.strMeal, style: AppTextStyles.heading2),
+          Text(receta.strMeal, style: Theme.of(context).textTheme.headlineMedium),
 
           const SizedBox(height: 12),
           _buildMetadataBadges(receta),
@@ -683,7 +683,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           children: [
             const Icon(Icons.kitchen, color: AppColors.primary, size: 22),
             const SizedBox(width: 8),
-            Text('Ingredientes', style: AppTextStyles.heading3),
+            Text('Ingredientes', style: Theme.of(context).textTheme.headlineSmall),
           ],
         ),
         const SizedBox(height: 14),
@@ -710,7 +710,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-              child: Text(ingrediente, style: AppTextStyles.bodyMedium)),
+              child: Text(ingrediente, style: Theme.of(context).textTheme.bodyMedium)),
           Text(
             cantidad,
             style: AppTextStyles.bodyMedium.copyWith(
@@ -733,14 +733,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             const Icon(Icons.format_list_numbered,
                 color: AppColors.primary, size: 22),
             const SizedBox(width: 8),
-            Text('Instrucciones', style: AppTextStyles.heading3),
+            Text('Instrucciones', style: Theme.of(context).textTheme.headlineSmall),
           ],
         ),
         const SizedBox(height: 14),
         if (receta.strInstructions.isEmpty)
           Text('Instrucciones no disponibles.',
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: Theme.of(context).textTheme.bodySmall?.color))
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color))
         else
           _buildPasos(receta.strInstructions),
       ],
@@ -758,7 +758,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           children: [
             const Icon(Icons.auto_awesome, color: AppColors.primary, size: 22),
             const SizedBox(width: 8),
-            Text('También te puede gustar', style: AppTextStyles.heading3),
+            Text('También te puede gustar', style: Theme.of(context).textTheme.headlineSmall),
           ],
         ),
         const SizedBox(height: 14),
@@ -887,7 +887,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                  child: Text(e.value, style: AppTextStyles.bodyMedium)),
+                  child: Text(e.value, style: Theme.of(context).textTheme.bodyMedium)),
             ],
           ),
         );
