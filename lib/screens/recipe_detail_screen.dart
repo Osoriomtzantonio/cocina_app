@@ -255,7 +255,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // ScaffoldMessenger local: los SnackBars quedan atados a ESTA pantalla.
+    // Cuando el usuario navega atrás, este messenger se destruye junto con
+    // sus SnackBars. Así nunca "escapan" a la pantalla anterior.
+    return ScaffoldMessenger(
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
@@ -276,13 +280,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
         ],
       ),
-    );
+    ), // Scaffold
+    ); // ScaffoldMessenger
   }
 
   // ── SLIVER APP BAR ────────────────────────────────────────────────
   Widget _buildSliverAppBar() {
+    // expandedHeight responsivo: 30% del alto de pantalla (mín 220, máx 350)
+    final expandedHeight = (MediaQuery.of(context).size.height * 0.30)
+        .clamp(220.0, 350.0);
+
     return SliverAppBar(
-      expandedHeight: 280,
+      expandedHeight: expandedHeight,
       pinned: true,
       backgroundColor: AppColors.primary,
       leading: IconButton(

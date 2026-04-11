@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/custom_drawer.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
-import 'favorites_screen.dart';
+import 'favorites_screen.dart' show FavoritesScreen, FavoritesScreenState;
 
 // Pantalla contenedora principal
 // Gestiona las tabs (BottomNavigationBar) y el Drawer lateral
@@ -20,6 +20,9 @@ class _MainScreenState extends State<MainScreen> {
   // Índice de la tab seleccionada (0=Inicio, 1=Buscar, 2=Favoritas)
   int _tabActiva = 0;
 
+  // Key para poder llamar cargarFavoritos() cuando el usuario entra a esa tab
+  final _favoritesKey = GlobalKey<FavoritesScreenState>();
+
   // ── CLASE 12: registrar controllers por pantalla ────────────────
   // initState se ejecuta una sola vez cuando MainScreen se crea.
   // Llamamos a los bindings aquí para que los controllers estén
@@ -33,6 +36,15 @@ class _MainScreenState extends State<MainScreen> {
 
   // Cambia la tab activa al índice de Buscar
   void _irABuscar() => setState(() => _tabActiva = 1);
+
+  // Cambia de tab y recarga favoritos si se navega a esa sección
+  void _cambiarTab(int index) {
+    setState(() => _tabActiva = index);
+    if (index == 2) {
+      // Al entrar a Favoritas, siempre recargamos para reflejar cambios recientes
+      _favoritesKey.currentState?.cargarFavoritos();
+    }
+  }
 
   // Títulos de la AppBar para cada tab
   final List<String> _titulos = ['CocinaApp', 'Buscar', 'Mis favoritas'];
@@ -49,9 +61,7 @@ class _MainScreenState extends State<MainScreen> {
       drawer: CustomDrawer(
         tabActiva: _tabActiva,
         // Callback: cuando el drawer selecciona una tab
-        onTabSeleccionada: (index) {
-          setState(() => _tabActiva = index);
-        },
+        onTabSeleccionada: _cambiarTab,
       ),
 
       // ── CUERPO: muestra la pantalla de la tab activa ───────────
@@ -62,7 +72,8 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           HomeScreen(onBuscarTap: _irABuscar), // pasa callback para abrir búsqueda
           SearchScreen(),
-          const FavoritesScreen(),
+          // GlobalKey permite llamar cargarFavoritos() al cambiar de tab
+          FavoritesScreen(key: _favoritesKey),
         ],
       ),
 
@@ -89,8 +100,8 @@ class _MainScreenState extends State<MainScreen> {
     return BottomNavigationBar(
       // Índice de la tab actualmente seleccionada
       currentIndex: _tabActiva,
-      // onTap: se ejecuta cuando el usuario toca una tab
-      onTap: (index) => setState(() => _tabActiva = index),
+      // onTap: cambia de tab y recarga favoritos si es necesario
+      onTap: _cambiarTab,
 
       // Color del ícono e indicador de la tab seleccionada
       selectedItemColor: AppColors.primary,

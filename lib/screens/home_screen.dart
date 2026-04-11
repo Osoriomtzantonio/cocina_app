@@ -306,13 +306,17 @@ class HomeScreen extends StatelessWidget {
     required String subtitulo,
     required double opacidad,
   }) {
+    // Alto responsivo: 22% del alto de pantalla (mín 160, máx 260)
+    final alturaCard = (MediaQuery.of(Get.context!).size.height * 0.22)
+        .clamp(160.0, 260.0);
+
     return AnimatedOpacity(
       key: key,
       opacity: opacidad,
       duration: const Duration(milliseconds: 300),
       child: Container(
         width: double.infinity,
-        height: 200,
+        height: alturaCard,
         decoration: BoxDecoration(
           color: const Color(0xFFFFE0CC),
           borderRadius: BorderRadius.circular(20),

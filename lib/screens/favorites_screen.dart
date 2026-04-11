@@ -8,10 +8,12 @@ class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
+  State<FavoritesScreen> createState() => FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+// Estado público para poder llamar cargarFavoritos() desde MainScreen
+// cuando el usuario cambia a esta tab
+class FavoritesScreenState extends State<FavoritesScreen> {
   final FavoritesService _favoritesService = FavoritesService();
 
   // Lista de recetas cargadas desde SharedPreferences
@@ -21,11 +23,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarFavoritos();
+    cargarFavoritos();
   }
 
   // ── CARGAR favoritos desde SharedPreferences ───────────────────
-  Future<void> _cargarFavoritos() async {
+  // Método público para que MainScreen lo llame al cambiar de tab
+  Future<void> cargarFavoritos() async {
     setState(() => _cargando = true);
     // Lee los datos guardados localmente (no necesita internet)
     final lista = await _favoritesService.obtenerFavoritos();
@@ -41,7 +44,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Future<void> _eliminarFavorito(RecipeModel receta) async {
     await _favoritesService.eliminarFavorito(receta.idMeal);
     // Recargamos la lista actualizada
-    await _cargarFavoritos();
+    await cargarFavoritos();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,7 +58,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             onPressed: () async {
               // Volvemos a guardar la receta eliminada
               await _favoritesService.guardarFavorito(receta);
-              await _cargarFavoritos();
+              await cargarFavoritos();
             },
           ),
         ),
@@ -80,7 +83,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _cargarFavoritos,
+            onPressed: cargarFavoritos,
             tooltip: 'Actualizar',
           ),
         ],

@@ -43,8 +43,11 @@ class RecipeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── PARTE SUPERIOR: imagen con overlay ───────────
-              _buildImagenConOverlay(),
+              // ── PARTE SUPERIOR: imagen ocupa el espacio disponible ───
+              // Expanded hace que la imagen tome todo el alto restante
+              // después de que la sección de info fije su propio alto.
+              // Así la imagen NUNCA desborda independientemente del tamaño.
+              Expanded(child: _buildImagenConOverlay()),
 
               // ── PARTE INFERIOR: nombre y metadata ────────────
               _buildInfoReceta(context),
@@ -56,70 +59,65 @@ class RecipeCard extends StatelessWidget {
   }
 
   // ── IMAGEN CON OVERLAY (usa Stack) ────────────────────────────────
+  // Sin altura fija: el Expanded del padre controla el tamaño.
+  // StackFit.expand hace que el Stack rellene ese espacio por completo.
   Widget _buildImagenConOverlay() {
-    return SizedBox(
-      height: 150,
-      width: double.infinity,
-      // Stack superpone widgets: la imagen va debajo, el badge encima
-      child: Stack(
-        children: [
-          // ── CAPA 1: Imagen de la receta ───────────────────────
-          Positioned.fill(
-            child: _buildImagen(),
-          ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ── CAPA 1: Imagen de la receta ───────────────────────
+        _buildImagen(),
 
-          // ── CAPA 2: Badge de área (país de origen) ───────────
-          // Positioned coloca el widget en una posición exacta dentro del Stack
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              // ── ROW: ícono + texto del país ──────────────────
-              child: Row(
-                mainAxisSize: MainAxisSize.min, // Row ocupa solo lo necesario
-                children: [
-                  const Icon(Icons.public, size: 12, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text(
-                    area,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+        // ── CAPA 2: Badge de área (país de origen) ───────────
+        Positioned(
+          top: 10,
+          right: 10,
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            // ── ROW: ícono + texto del país ──────────────────
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.public, size: 12, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(
+                  area,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── CAPA 3: Degradado inferior (mejora legibilidad) ───
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 50,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.3),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
                 ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── CAPA 3: Degradado inferior (mejora legibilidad) ───
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 50,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.3),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
