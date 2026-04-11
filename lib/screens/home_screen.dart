@@ -299,14 +299,30 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: _buildTarjetaReceta(
-            key: ValueKey(receta.idMeal),
-            imagenUrl: receta.strMealThumb,
-            nombre:    receta.strMeal,
-            subtitulo: '${receta.strCategory} · ${receta.strArea}',
-            opacidad:  cargandoReceta ? 0.4 : 1.0,
+        // Builder da un context anidado para usar Navigator.push correctamente
+        Builder(
+          builder: (context) => AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            child: _buildTarjetaReceta(
+              key:       ValueKey(receta.idMeal),
+              imagenUrl: receta.strMealThumb,
+              nombre:    receta.strMeal,
+              subtitulo: '${receta.strCategory} · ${receta.strArea}',
+              opacidad:  cargandoReceta ? 0.4 : 1.0,
+              // Al tocar la tarjeta navega al detalle de la receta
+              onTap: cargandoReceta
+                  ? null
+                  : () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RecipeDetailScreen(
+                            idMeal:    receta.idMeal,
+                            nombre:    receta.strMeal,
+                            imagenUrl: receta.strMealThumb,
+                          ),
+                        ),
+                      ),
+            ),
           ),
         ),
       ],
@@ -320,6 +336,7 @@ class HomeScreen extends StatelessWidget {
     required String nombre,
     required String subtitulo,
     required double opacidad,
+    VoidCallback? onTap,
   }) {
     // Alto responsivo: 22% del alto de pantalla (mín 160, máx 260)
     final alturaCard = (MediaQuery.of(Get.context!).size.height * 0.22)
@@ -329,7 +346,9 @@ class HomeScreen extends StatelessWidget {
       key: key,
       opacity: opacidad,
       duration: const Duration(milliseconds: 300),
-      child: Container(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         width: double.infinity,
         height: alturaCard,
         decoration: BoxDecoration(
@@ -387,7 +406,8 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
+      ), // Container
+      ), // GestureDetector
     );
   }
 
